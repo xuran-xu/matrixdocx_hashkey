@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import MainLayout from './main-layout';
-import StatsCard from '@/components/StatsCard';
 import { StakeType } from '@/types/contracts';
 import { formatBigInt } from '@/utils/format';
 import { useAccount } from 'wagmi';
@@ -14,10 +13,9 @@ import { StakingOptionCard } from '@/components/StakingOptionCard';
 export default function Home() {
   const [simulatedAmount, setSimulatedAmount] = useState('1000');
   const [debouncedAmount, setDebouncedAmount] = useState(simulatedAmount);
-  const { address, isConnected } = useAccount();
+  const { address: _address, isConnected } = useAccount();
   const { totalStaked, stakingStats, exchangeRate, minStakeAmount, isLoading } = useStakingInfo(debouncedAmount);
   const { stakeLocked, isPending } = useStakeLocked();
-  const router = useRouter();
   
   // 添加防抖处理
   useEffect(() => {
@@ -29,7 +27,7 @@ export default function Home() {
   }, [simulatedAmount]);
   
   // 处理质押选项卡片点击
-  const handleStakeClick = async (type: StakeType) => {
+  const _handleStakeClick = async (type: StakeType) => {
     if (!isConnected) {
       alert('请先连接钱包');
       return;
@@ -141,7 +139,7 @@ export default function Home() {
   }, [stakingStats]);
   
   // 处理模拟金额输入变化
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const _handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value === '' || /^\d+(\.\d*)?$/.test(value)) {
       setSimulatedAmount(value);
@@ -238,7 +236,7 @@ export default function Home() {
               <input
                 type="text"
                 value={simulatedAmount}
-                onChange={handleAmountChange}
+                onChange={_handleAmountChange}
                 className="input input-bordered w-full text-center text-primary/80"
                 placeholder="输入HSK数量"
               />

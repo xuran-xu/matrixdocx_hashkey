@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { StakeType } from '@/types/contracts';
-import Link from 'next/link';
+// import { StakeType } from '@/types/contracts';
+// import Link from 'next/link';
 
 interface StakingOptionCardProps {
   title: string;
@@ -45,21 +45,21 @@ export function StakingOptionCard({
           
           <div className="flex justify-between">
             <span className="text-primary/80">额外奖励</span>
-            {bonus && bonus !== '+0.00%' ? (
-              <span className="font-medium text-primary/80">{bonus}</span>
+            {bonus !== undefined ? (
+              <span className="font-medium text-primary/80">{bonus}%</span>
             ) : (
-              <span className="font-medium text-primary/80">+0.00%</span>
+              <span className="font-medium text-primary/80">0%</span>
             )}
           </div>
           
           <div className="flex justify-between">
             <span className="text-primary/80">最大 APR</span>
-            <span className="font-medium text-primary/80">{maxApr}</span>
+            <span className="font-medium text-primary/80">{maxApr}%</span>
           </div>
           
           <div className="flex justify-between">
             <span className="text-primary/80">提前解锁惩罚</span>
-            <span className="font-medium text-primary/80">{penalty}</span>
+            <span className="font-medium text-primary/80">{penalty}%</span>
           </div>
         </div>
       </div>

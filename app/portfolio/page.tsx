@@ -12,11 +12,11 @@ import { getContractAddresses } from '@/config/contracts';
 export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
   const { lockedStakeCount, activeLockedStakes, isLoading: loadingInfo } = useUserStakingInfo();
-  const { unstakeLocked, isPending } = useUnstakeLocked();
+  const { unstakeLocked } = useUnstakeLocked();
   const [stakedPositions, setStakedPositions] = useState<Array<{ id: number, info: LockedStakeInfo }>>([]);
   const [isLoadingPositions, setIsLoadingPositions] = useState(false);
   const [selectedStakeId, setSelectedStakeId] = useState<number | null>(null);
-  const stakeInfo = useLockedStakeInfo(selectedStakeId);
+  // const stakeInfo = useLockedStakeInfo(selectedStakeId);
   const chainId = useChainId();
   const contractAddress = getContractAddresses(chainId).stakingContract;
   const publicClient = usePublicClient();
@@ -81,9 +81,7 @@ export default function PortfolioPage() {
     }
   };
 
-  const handleSelectStake = (id: number) => {
-    setSelectedStakeId(id);
-  };
+  // const handleSelectStake = (id: number) => { setSelectedStakeId(id); };
 
   if (!isConnected) {
     return (

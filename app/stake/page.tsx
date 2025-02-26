@@ -1,27 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import MainLayout from '../main-layout';
 import { StakeType } from '@/types/contracts';
 import { useAccount, useBalance } from 'wagmi';
 import { useStakeLocked, useStakingInfo } from '@/hooks/useStakingContracts';
 import { toast } from 'react-toastify';
-import { useChainId, usePublicClient } from 'wagmi';
-import { getExplorerUrl } from '@/utils/explorer';
 
 export default function StakePage() {
   const { address, isConnected } = useAccount();
   const { data: balanceData } = useBalance({
     address: address,
   });
-  const { stakingStats, minStakeAmount, isLoading } = useStakingInfo();
+  const { stakingStats, } = useStakingInfo();
   const { 
     stakeLocked, 
     isPending,
-    error
   } = useStakeLocked();
-  const chainId = useChainId();
-  const publicClient = usePublicClient();
   
   // 添加状态来跟踪选中的期限和交易状态
   const [selectedDays, setSelectedDays] = useState(30);

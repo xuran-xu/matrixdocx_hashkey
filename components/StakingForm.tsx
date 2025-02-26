@@ -25,8 +25,7 @@ export default function StakingForm({
   const minStakeFormatted = formatBigInt(minStakeAmount);
   const userBalanceFormatted = formatBigInt(userBalance);
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!isConnected) return;
     
     try {
