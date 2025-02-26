@@ -1,0 +1,354 @@
+'use client';
+
+import { useAccount, useWriteContract, useChainId, usePublicClient, useWalletClient, useContractWrite } from 'wagmi';
+import { getContractAddresses } from '@/config/contracts';
+import { StakeType, StakingStats } from '@/types/contracts';
+import { parseEther } from '@/utils/format';
+import { HashKeyChainStakingABI } from '@/constants/abi';
+import { useState, useEffect } from 'react';
+import { waitForTransactionReceipt, writeContract } from 'wagmi/actions';
+import { config } from '@/app/providers';
+
+// 获取质押合约的基本信息
+export function useStakingInfo(simulatedAmount: string = '1000') {
+  const chainId = useChainId();
+  const contractAddress = getContractAddresses(chainId).stakingContract;
+  const simulatedAmountWei = parseEther(simulatedAmount || '0');
+  const publicClient = usePublicClient();
+  
+  const [data, setData] = useState<{
+    totalStaked: bigint;
+    stakingStats: StakingStats | null;
+    exchangeRate: bigint;
+    minStakeAmount: bigint;
+    isLoading: boolean;
+  }>({
+    totalStaked: BigInt(0),
+    stakingStats: null,
+    exchangeRate: BigInt(0),
+    minStakeAmount: BigInt(0),
+    isLoading: false,
+  });
+  
+  useEffect(() => {
+    const fetchStakingInfo = async () => {
+      if (!publicClient || !contractAddress) return;
+      
+      setData(prev => ({ ...prev, isLoading: true }));
+      
+      try {
+        console.log('Fetching staking info with amount:', simulatedAmountWei.toString());
+        
+        // 获取总质押量
+        const totalValueLocked = await publicClient.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: HashKeyChainStakingABI,
+          functionName: 'totalValueLocked',
+        });
+        
+        // 获取质押统计信息，传入模拟金额
+        const detailedStakingStats = await publicClient.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: HashKeyChainStakingABI,
+          functionName: 'getDetailedStakingStats',
+          args: [simulatedAmountWei], // 使用模拟金额作为参数
+        });
+        
+        // 获取当前兑换率
+        const currentExchangeRate = await publicClient.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: HashKeyChainStakingABI,
+          functionName: 'getCurrentExchangeRate',
+        });
+        
+        // 获取最小质押金额
+        const minStakeAmount = await publicClient.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: HashKeyChainStakingABI,
+          functionName: 'minStakeAmount',
+        });
+        
+        setData({
+          totalStaked: totalValueLocked as bigint,
+          stakingStats: detailedStakingStats as StakingStats,
+          exchangeRate: currentExchangeRate as bigint,
+          minStakeAmount: minStakeAmount as bigint,
+          isLoading: false,
+        });
+        
+        console.log('Staking info fetched successfully:', {
+          totalValueLocked,
+          detailedStakingStats,
+          currentExchangeRate,
+          minStakeAmount
+        });
+      } catch (error) {
+        console.error('Failed to fetch staking info:', error);
+        setData(prev => ({ ...prev, isLoading: false }));
+      }
+    };
+    
+    fetchStakingInfo();
+  }, [publicClient, contractAddress, simulatedAmountWei]);
+  
+  return data;
+}
+
+// 获取用户的质押信息
+export function useUserStakingInfo() {
+  const { address } = useAccount();
+  const chainId = useChainId();
+  const [isLoading, setIsLoading] = useState(true);
+  const [lockedStakeCount, setLockedStakeCount] = useState<bigint>(BigInt(0));
+  const [activeLockedStakes, setActiveLockedStakes] = useState<bigint>(BigInt(0));
+  
+  // 获取当前配置的客户端
+  const publicClient = usePublicClient();
+
+  useEffect(() => {
+    const fetchStakingInfo = async () => {
+      if (!address || !publicClient) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const contractAddress = getContractAddresses(chainId).stakingContract;
+        
+        // 使用当前配置的客户端进行合约调用
+        const count = await publicClient.readContract({
+          address: contractAddress,
+          abi: HashKeyChainStakingABI,
+          functionName: 'getUserLockedStakeCount',
+          args: [address],
+        });
+        
+        const active = await publicClient.readContract({
+          address: contractAddress,
+          abi: HashKeyChainStakingABI,
+          functionName: 'getUserActiveLockedStakes',
+          args: [address],
+        });
+
+        setLockedStakeCount(count as bigint);
+        setActiveLockedStakes(active as bigint);
+      } catch (error) {
+        console.error('Failed to fetch staking info:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStakingInfo();
+  }, [address, chainId, publicClient]);
+
+  return {
+    lockedStakeCount,
+    activeLockedStakes,
+    isLoading,
+  };
+}
+
+// 质押hooks
+export function useStake() {
+  const chainId = useChainId();
+  const contractAddress = getContractAddresses(chainId).stakingContract;
+  const { writeContractAsync, isPending } = useWriteContract();
+
+  const stake = async (amount: string) => {
+    const amountWei = parseEther(amount);
+    return writeContractAsync({
+      address: contractAddress,
+      abi: HashKeyChainStakingABI,
+      functionName: 'stake',
+      value: amountWei
+    });
+  };
+
+  return { stake, isPending };
+}
+
+// 简化的 useStakeLocked 钩子，不再尝试等待交易确认
+export function useStakeLocked() {
+  const chainId = useChainId();
+  const contractAddress = getContractAddresses(chainId).stakingContract;
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const stakeLocked = async (amount: string, stakeType: StakeType) => {
+    try {
+      setIsPending(true);
+      setError(null);
+      
+      const amountWei = parseEther(amount);
+      
+      // 发送交易
+      await writeContract(config, {
+        address: contractAddress,
+        abi: HashKeyChainStakingABI,
+        functionName: 'stakeLocked',
+        args: [stakeType],
+        value: amountWei,
+      });
+      
+      // 如果没有抛出错误，说明交易已提交成功
+      return true;
+    } catch (submitError) {
+      console.error('质押失败:', submitError);
+      if (submitError instanceof Error) {
+        setError(submitError);
+      } else {
+        setError(new Error('质押失败'));
+      }
+      throw submitError;
+    } finally {
+      setIsPending(false);
+    }
+  };
+  
+  return { 
+    stakeLocked, 
+    isPending,
+    error
+  };
+}
+
+// 解除锁定质押hooks
+export function useUnstakeLocked() {
+  const chainId = useChainId();
+  const contractAddress = getContractAddresses(chainId).stakingContract;
+  const { writeContractAsync, isPending } = useWriteContract();
+
+  const unstakeLocked = async (stakeId: number) => {
+    return writeContractAsync({
+      address: contractAddress,
+      abi: HashKeyChainStakingABI,
+      functionName: 'unstakeLocked',
+      args: [BigInt(stakeId)]
+    });
+  };
+
+  return { unstakeLocked, isPending };
+}
+
+// 获取锁定质押信息
+export function useLockedStakeInfo(stakeId: number | null) {
+  const chainId = useChainId();
+  const contractAddress = getContractAddresses(chainId).stakingContract;
+  const publicClient = usePublicClient();
+  const { address } = useAccount();
+  
+  const [data, setData] = useState<{
+    sharesAmount: bigint;
+    hskAmount: bigint;
+    currentHskValue: bigint;
+    lockEndTime: bigint;
+    isWithdrawn: boolean;
+    isLocked: boolean;
+    reward: bigint;
+    isLoading: boolean;
+    error: Error | null;
+  }>({
+    sharesAmount: BigInt(0),
+    hskAmount: BigInt(0),
+    currentHskValue: BigInt(0),
+    lockEndTime: BigInt(0),
+    isWithdrawn: false,
+    isLocked: false,
+    reward: BigInt(0),
+    isLoading: false,
+    error: null
+  });
+  
+  useEffect(() => {
+    if (!publicClient || !contractAddress || !address || stakeId === null) return;
+    
+    const fetchStakeInfo = async () => {
+      setData(prev => ({ ...prev, isLoading: true, error: null }));
+      try {
+        // 调用合约获取锁定质押信息
+        const stakeInfo = await publicClient.readContract({
+          address: contractAddress,
+          abi: HashKeyChainStakingABI,
+          functionName: 'getLockedStakeInfo',
+          args: [address, BigInt(stakeId)]
+        }) as [bigint, bigint, bigint, bigint, boolean, boolean];
+        
+        // 计算收益
+        const reward = stakeInfo[2] - stakeInfo[1];
+        
+        setData({
+          sharesAmount: stakeInfo[0],
+          hskAmount: stakeInfo[1],
+          currentHskValue: stakeInfo[2],
+          lockEndTime: stakeInfo[3],
+          isWithdrawn: stakeInfo[4],
+          isLocked: stakeInfo[5],
+          reward: reward,
+          isLoading: false,
+          error: null
+        });
+      } catch (error) {
+        console.error('获取质押信息失败:', error);
+        setData(prev => ({ 
+          ...prev, 
+          isLoading: false, 
+          error: error instanceof Error ? error : new Error('获取质押信息失败') 
+        }));
+      }
+    };
+    
+    fetchStakeInfo();
+  }, [publicClient, contractAddress, address, stakeId]);
+  
+  return data;
+}
+
+// 根据 ABI 修改 batchGetStakingInfo 函数
+export async function batchGetStakingInfo(contractAddress: string, publicClient: any, stakeIds: number[], userAddress: string) {
+  const results = [];
+  
+  for (const id of stakeIds) {
+    try {
+      // 获取锁定质押信息，返回值格式：
+      // sharesAmount, hskAmount, currentHskValue, lockEndTime, isWithdrawn, isLocked
+      const stakeInfo = await publicClient.readContract({
+        address: contractAddress,
+        abi: HashKeyChainStakingABI,
+        functionName: 'getLockedStakeInfo',
+        args: [userAddress, BigInt(id)]
+      }) as [bigint, bigint, bigint, bigint, boolean, boolean];
+      
+      // 收益 = 当前价值 - 初始质押金额
+      const reward = stakeInfo[2] - stakeInfo[1];
+      
+      results.push({
+        id,
+        sharesAmount: stakeInfo[0],    // 份额数量
+        hskAmount: stakeInfo[1],       // 初始质押的 HSK 金额
+        currentHskValue: stakeInfo[2],  // 当前价值（包含收益）
+        lockEndTime: stakeInfo[3],     // 锁定结束时间
+        isWithdrawn: stakeInfo[4],     // 是否已提取
+        isLocked: stakeInfo[5],        // 是否仍在锁定
+        reward: reward,                // 计算的收益
+        error: null
+      });
+    } catch (error) {
+      console.error(`获取质押 ${id} 失败:`, error);
+      results.push({
+        id,
+        sharesAmount: BigInt(0),
+        hskAmount: BigInt(0),
+        currentHskValue: BigInt(0),
+        lockEndTime: BigInt(0),
+        isWithdrawn: false,
+        isLocked: false,
+        reward: BigInt(0),
+        error: error
+      });
+    }
+  }
+  
+  return results;
+}
