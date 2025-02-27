@@ -6,7 +6,6 @@ import { StakeType } from '@/types/contracts';
 import { useAccount, useBalance } from 'wagmi';
 import { useStakeLocked, useStakingInfo } from '@/hooks/useStakingContracts';
 import { toast } from 'react-toastify';
-import { formatBigInt } from '@/utils/format';
 
 export default function StakePage() {
   const { address, isConnected } = useAccount();
@@ -17,6 +16,7 @@ export default function StakePage() {
   const { 
     stakeLocked, 
     isPending,
+    isConfirming,
   } = useStakeLocked();
   
   // State to track selected duration and transaction status
@@ -107,9 +107,13 @@ export default function StakePage() {
     
     try {
       setIsSubmitting(true);
-      await stakeLocked(amount, type);
-      toast.success('Staking request submitted successfully');
-      setStakeAmount('');
+      // 发送交易并等待确认
+      const success = await stakeLocked(amount, type);
+      
+      if (success) {
+        toast.success('Staking transaction confirmed successfully');
+        setStakeAmount('');
+      }
     } catch (error) {
       console.error('Staking failed:', error);
       toast.error('Staking failed. See console for details.');
@@ -143,7 +147,14 @@ export default function StakePage() {
                     <input
                       type="number"
                       value={stakeAmount}
-                      onChange={(e) => setStakeAmount(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Only allow positive numbers
+                        if (value === '' || Number(value) >= 0) {
+                          setStakeAmount(value);
+                        }
+                      }}
+                      min="0"
                       placeholder="Enter amount to stake"
                       className="w-full bg-slate-800/50 border border-slate-600 text-white py-4 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
@@ -158,6 +169,18 @@ export default function StakePage() {
                     Available: {balanceData?.formatted || '0'} {balanceData?.symbol || 'HSK'}
                   </div>
                 </div>
+                
+                {/* Add minimum stake warning message */}
+                {stakeAmount && Number(stakeAmount) < 100 && (
+                  <div className="mt-2 text-sm text-yellow-500">
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Minimum stake amount is 100 HSK
+                    </div>
+                  </div>
+                )}
                 
                 <h2 className="text-2xl font-light text-white mb-6">Select Lock Period</h2>
                 
@@ -193,14 +216,16 @@ export default function StakePage() {
                         </div>
                         <div className="flex justify-between items-center mb-1">
                           <div className="text-sm text-slate-400">APR</div>
-                          <div className="text-base text-primary">{(option.apr / 100).toFixed(2)}%</div>
+                          <div className="text-lg font-bold text-cyan-400">{(option.apr / 100).toFixed(2)}%</div>
                         </div>
-                        {option.bonus > 0 && (
-                          <div className="flex justify-between items-center">
-                            <div className="text-sm text-slate-400">Bonus</div>
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm text-slate-400">Bonus</div>
+                          {option.bonus > 0 ? (
                             <div className="text-sm text-emerald-400">+{(option.bonus / 100).toFixed(2)}%</div>
-                          </div>
-                        )}
+                          ) : (
+                            <div className="text-sm text-slate-500">+0.00%</div>
+                          )}
+                        </div>
                       </button>
                     ))
                   )}
@@ -209,10 +234,14 @@ export default function StakePage() {
                 {/* Submit button */}
                 <button
                   onClick={() => handleStake(stakeAmount, getStakeTypeFromDays(selectedDays))}
-                  disabled={!isConnected || isSubmitting || isPending || !stakeAmount}
+                  disabled={!isConnected || isSubmitting || isPending || !stakeAmount || Number(stakeAmount) < 100}
                   className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-4 px-4 rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting || isPending ? 'Processing...' : 'Confirm Staking'}
+                  {isPending 
+                    ? 'Awaiting wallet confirmation...' 
+                    : isConfirming 
+                      ? 'Confirming transaction...' 
+                      : 'Confirm Staking'}
                 </button>
               </div>
             </div>

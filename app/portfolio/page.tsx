@@ -14,7 +14,7 @@ import { StHSKABI } from '@/constants/abi';
 export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
   const { lockedStakeCount, activeLockedStakes, isLoading: loadingInfo } = useUserStakingInfo();
-  const { unstakeLocked } = useUnstakeLocked();
+  const { unstakeLocked, isPending: unstakePending, isConfirming: unstakeConfirming } = useUnstakeLocked();
   const [stakedPositions, setStakedPositions] = useState<Array<{ id: number, info: LockedStakeInfo, estimatedProfit?: bigint, pendingReward?: bigint }>>([]);
   const [isLoadingPositions, setIsLoadingPositions] = useState(false);
   const [processingStakeId, setProcessingStakeId] = useState<number | null>(null);
@@ -312,41 +312,56 @@ export default function PortfolioPage() {
     return () => clearInterval(intervalId);
   }, [fetchStakedPositions, fetchRewardParams]);
   
-  // Handle unstaking
-  const handleUnstake = async (stakeId: number) => {
-    if (processingStakeId !== null) {
-      toast.warn('Please wait for the current transaction to complete');
-      return;
+  // Add modal state
+  const [showUnstakeModal, setShowUnstakeModal] = useState(false);
+  const [unstakingPosition, setUnstakingPosition] = useState<number | null>(null);
+  
+  // Modal handling - opens the confirmation dialog
+  const openUnstakeConfirmation = (stakeId: number) => {
+    const position = stakedPositions.find(pos => pos.id === stakeId);
+    if (!position) return;
+    
+    setUnstakingPosition(stakeId);
+    setShowUnstakeModal(true);
+  };
+  
+  // Replaces the old handleUnstake function
+  const handleUnstakeClick = (stakeId: number) => {
+    const position = stakedPositions.find(pos => pos.id === stakeId);
+    if (!position) return;
+    
+    if (position.info.isLocked) {
+      // For locked positions, show confirmation dialog
+      openUnstakeConfirmation(stakeId);
+    } else {
+      // For unlocked positions, unstake directly
+      executeUnstake(stakeId);
     }
+  };
+  
+  // Actual unstaking execution
+  const executeUnstake = async (stakeId: number) => {
+    if (processingStakeId !== null) return;
     
     setProcessingStakeId(stakeId);
     
     try {
-      await unstakeLocked(stakeId);
-      toast.success('Unstaking transaction submitted successfully');
+      // 执行交易并等待确认
+      const success = await unstakeLocked(stakeId);
       
-      // Update UI to reflect changes
-      setStakedPositions(prev => prev.filter(pos => pos.id !== stakeId));
-      
-      // Recalculate total rewards
-      setTotalRewards(prev => {
-        const unstakePosition = stakedPositions.find(pos => pos.id === stakeId);
-        if (!unstakePosition) return prev;
-        return prev - (unstakePosition.info.currentHskValue - unstakePosition.info.hskAmount);
-      });
-      
-      // Update estimated total rewards
-      setEstimatedTotalRewards(prev => {
-        const unstakePosition = stakedPositions.find(pos => pos.id === stakeId);
-        if (!unstakePosition) return prev;
-        return prev - (unstakePosition.estimatedProfit || (unstakePosition.info.currentHskValue - unstakePosition.info.hskAmount));
-      });
-      
+      // 交易已确认
+      if (success) {
+        toast.success('Successfully unstaked your position');
+        // 刷新数据
+        fetchStakedPositions();
+      }
     } catch (error) {
-      console.error('Unstaking failed:', error);
-      toast.error('Failed to unstake. See console for details.');
+      console.error('Failed to unstake:', error);
+      toast.error('Failed to unstake your position');
     } finally {
       setProcessingStakeId(null);
+      setShowUnstakeModal(false);
+      setUnstakingPosition(null);
     }
   };
   
@@ -561,7 +576,7 @@ export default function PortfolioPage() {
                     {!position.info.isWithdrawn && (
                       <div className="flex justify-end">
                         <button
-                          onClick={() => handleUnstake(position.id)}
+                          onClick={() => handleUnstakeClick(position.id)}
                           disabled={processingStakeId === position.id}
                           className={`px-4 py-2 rounded ${
                             position.info.isLocked
@@ -651,6 +666,58 @@ export default function PortfolioPage() {
           </div>
         </div>
       </div>
+      
+      {/* Confirmation Modal */}
+      {showUnstakeModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-medium text-white mb-4">Early Unstake Warning</h3>
+            
+            <div className="mb-6">
+              <div className="flex items-start mb-4">
+                <svg className="w-6 h-6 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p className="text-white">
+                  You are unstaking before the lock period ends. This will result in a penalty and you will not receive the full rewards.
+                </p>
+              </div>
+              
+              <div className="bg-yellow-500/20 border border-yellow-500/40 rounded-lg p-4 text-sm text-yellow-200">
+                <p className="font-medium mb-2">Penalty details:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Your original principal will be returned</li>
+                  <li>A portion of your earned rewards will be forfeited</li>
+                  <li>The specific penalty depends on how early you unstake</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => {
+                  setShowUnstakeModal(false);
+                  setUnstakingPosition(null);
+                }}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => unstakingPosition !== null && executeUnstake(unstakingPosition)}
+                disabled={processingStakeId !== null}
+                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
+              >
+                {unstakePending 
+                  ? 'Awaiting wallet confirmation...'
+                  : unstakeConfirming
+                    ? 'Confirming transaction...'
+                    : 'Confirm Unstake'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }

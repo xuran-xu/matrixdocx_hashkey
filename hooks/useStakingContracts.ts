@@ -169,12 +169,13 @@ export function useStake() {
   return { stake, isPending };
 }
 
-// 简化的 useStakeLocked 钩子，不再尝试等待交易确认
+// 修改 useStakeLocked 钩子
 export function useStakeLocked() {
   const chainId = useChainId();
   const contractAddress = getContractAddresses(chainId).stakingContract;
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const stakeLocked = async (amount: string, stakeType: StakeType) => {
     try {
@@ -184,7 +185,7 @@ export function useStakeLocked() {
       const amountWei = parseEther(amount);
       
       // 发送交易
-      await writeContract(config, {
+      const tx = await writeContract(config, {
         address: contractAddress,
         abi: HashKeyChainStakingABI,
         functionName: 'stakeLocked',
@@ -192,44 +193,88 @@ export function useStakeLocked() {
         value: amountWei,
       });
       
-      // 如果没有抛出错误，说明交易已提交成功
-      return true;
+      console.log('Transaction submitted:', tx);
+      
+      // 等待交易确认
+      setIsConfirming(true);
+      const receipt = await waitForTransactionReceipt(config, {
+        hash: tx,
+      });
+      
+      console.log('Transaction confirmed:', receipt);
+      
+      // 如果没有抛出错误且交易成功，返回 true
+      return receipt.status === 'success';
     } catch (submitError) {
-      console.error('质押失败:', submitError);
+      console.error('Staking failed:', submitError);
       if (submitError instanceof Error) {
         setError(submitError);
       } else {
-        setError(new Error('质押失败'));
+        setError(new Error('Staking failed'));
       }
       throw submitError;
     } finally {
       setIsPending(false);
+      setIsConfirming(false);
     }
   };
   
   return { 
     stakeLocked, 
     isPending,
+    isConfirming, // 新增状态跟踪交易确认过程
     error
   };
 }
 
-// 解除锁定质押hooks
+// 解除锁定质押hooks - 修改为等待交易确认
 export function useUnstakeLocked() {
   const chainId = useChainId();
   const contractAddress = getContractAddresses(chainId).stakingContract;
-  const { writeContractAsync, isPending } = useWriteContract();
+  const [isPending, setIsPending] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   const unstakeLocked = async (stakeId: number) => {
-    return writeContractAsync({
-      address: contractAddress,
-      abi: HashKeyChainStakingABI,
-      functionName: 'unstakeLocked',
-      args: [BigInt(stakeId)]
-    });
+    try {
+      setIsPending(true);
+      setError(null);
+      
+      // 发送交易
+      const tx = await writeContract(config, {
+        address: contractAddress,
+        abi: HashKeyChainStakingABI,
+        functionName: 'unstakeLocked',
+        args: [BigInt(stakeId)]
+      });
+      
+      console.log('Unstake transaction submitted:', tx);
+      
+      // 等待交易确认
+      setIsConfirming(true);
+      const receipt = await waitForTransactionReceipt(config, {
+        hash: tx,
+      });
+      
+      console.log('Unstake transaction confirmed:', receipt);
+      
+      // 返回交易状态
+      return receipt.status === 'success';
+    } catch (submitError) {
+      console.error('Unstaking failed:', submitError);
+      if (submitError instanceof Error) {
+        setError(submitError);
+      } else {
+        setError(new Error('Unstaking failed'));
+      }
+      throw submitError;
+    } finally {
+      setIsPending(false);
+      setIsConfirming(false);
+    }
   };
 
-  return { unstakeLocked, isPending };
+  return { unstakeLocked, isPending, isConfirming, error };
 }
 
 // 获取锁定质押信息
