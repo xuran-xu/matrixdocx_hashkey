@@ -52,6 +52,34 @@ export const HashKeyChainStakingABI = [
     outputs: [{ type: "uint256" }]
   },
   {
+    name: "updateRewardPool",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: []
+  },
+  {
+    name: "lastRewardBlock",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }]
+  },
+  {
+    name: "hskPerBlock",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }]
+  },
+  {
+    name: "totalShares",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }]
+  },
+  {
     name: "getAllStakingAPRs",
     type: "function",
     stateMutability: "view",
@@ -128,6 +156,13 @@ export const HashKeyChainStakingABI = [
     outputs: []
   },
   {
+    name: "totalPooledHSK",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }]
+  },
+  {
     type: "event",
     name: "Stake",
     inputs: [
@@ -155,17 +190,17 @@ export const HashKeyChainStakingABI = [
 
 export const StHSKABI = [
   {
-    name: "balanceOf",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "account", type: "address" }],
-    outputs: [{ type: "uint256" }]
-  },
-  {
     name: "totalSupply",
     type: "function",
     stateMutability: "view",
     inputs: [],
+    outputs: [{ type: "uint256" }]
+  },
+  {
+    name: "balanceOf",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
     outputs: [{ type: "uint256" }]
   },
   {

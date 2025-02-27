@@ -18,9 +18,11 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="mytheme">
       <body className={inter.className}>
-        <Providers>
-          {children}
-        </Providers>
+        <div className='bg-gradient-to-b from-slate-900 to-slate-800'>
+          <Providers>
+            {children}
+          </Providers>
+        </div>
       </body>
     </html>
   )

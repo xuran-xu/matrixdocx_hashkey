@@ -6,18 +6,31 @@ import { StakeType } from '@/types/contracts';
 import { formatBigInt } from '@/utils/format';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
-import { useStakeLocked, useStakingInfo } from '@/hooks/useStakingContracts';
-import { useRouter } from 'next/navigation';
-import { StakingOptionCard } from '@/components/StakingOptionCard';
+import { useStakingInfo } from '@/hooks/useStakingContracts';
 
 export default function Home() {
+  // 添加本地loading状态，初始为true
+  const [initialLoading, setInitialLoading] = useState(true);
   const [simulatedAmount, setSimulatedAmount] = useState('1000');
   const [debouncedAmount, setDebouncedAmount] = useState(simulatedAmount);
   const { address: _address, isConnected } = useAccount();
-  const { totalStaked, stakingStats, exchangeRate, minStakeAmount, isLoading } = useStakingInfo(debouncedAmount);
-  const { stakeLocked, isPending } = useStakeLocked();
+  const { totalStaked, stakingStats, exchangeRate, isLoading: apiLoading } = useStakingInfo(debouncedAmount);
   
-  // 添加防抖处理
+  // 结合API加载状态和初始加载状态
+  const isLoading = initialLoading || apiLoading;
+  
+  // 当数据加载完成后，关闭初始加载状态
+  useEffect(() => {
+    if (!apiLoading && totalStaked !== undefined) {
+      // 添加一个小延迟，确保UI平滑过渡
+      const timer = setTimeout(() => {
+        setInitialLoading(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [apiLoading, totalStaked]);
+  
+  // Add debounce processing
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedAmount(simulatedAmount);
@@ -26,244 +39,277 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [simulatedAmount]);
   
-  // 处理质押选项卡片点击
-  const _handleStakeClick = async (type: StakeType) => {
-    if (!isConnected) {
-      alert('请先连接钱包');
-      return;
-    }
-    
-    try {
-      await stakeLocked(simulatedAmount, type);
-      alert('质押请求已提交');
-    } catch (error) {
-      console.error('质押失败:', error);
-      alert('质押失败，请查看控制台了解详情');
-    }
-  };
-  
-  // 从合约数据中提取APR和奖励信息
+  // Extract APR and reward information from contract data
   const stakingOptions = React.useMemo(() => {
-    // 默认选项，当合约数据不可用时显示
+    // Default options when contract data is not available
     const defaultOptions = [
       {
-        title: '30天锁定',
+        title: '30 Day Lock',
         duration: 30,
         apr: 1.20,
         bonus: 0,
         maxApr: 1.20,
-        penalty: 500, // 5.00%
         stakeType: StakeType.FIXED_30_DAYS
       },
       {
-        title: '90天锁定',
+        title: '90 Day Lock',
         duration: 90,
         apr: 3.50,
         bonus: 0.80,
         maxApr: 3.50,
-        penalty: 1000, // 10.00%
         stakeType: StakeType.FIXED_90_DAYS
       },
       {
-        title: '180天锁定',
+        title: '180 Day Lock',
         duration: 180,
         apr: 6.50,
         bonus: 2.00,
         maxApr: 6.50,
-        penalty: 1500, // 15.00%
         stakeType: StakeType.FIXED_180_DAYS
       },
       {
-        title: '365天锁定',
+        title: '365 Day Lock',
         duration: 365,
         apr: 12.00,
         bonus: 4.00,
         maxApr: 12.00,
-        penalty: 2000, // 20.00%
         stakeType: StakeType.FIXED_365_DAYS
       },
     ];
 
-    // 如果没有合约数据，返回默认选项
+    // If no contract data, return default options
     if (!stakingStats || !stakingStats.currentAPRs || !stakingStats.maxPossibleAPRs) {
-      console.log('使用默认质押选项');
+      console.log('Using default staking options');
       return defaultOptions;
     }
     
     try {
-      console.log('使用合约数据计算质押选项:', stakingStats);
+      console.log('Calculating staking options from contract data:', stakingStats);
       
-      // 提取数据并计算
+      // Extract data and calculate
       return [
         {
-          title: '30天锁定',
+          title: '30 Day Lock',
           duration: 30,
           apr: Number(stakingStats.currentAPRs[0] || BigInt(0)) / 100,
           bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[0] || BigInt(0)) / 100 : 0,
           maxApr: Number(stakingStats.maxPossibleAPRs[0] || BigInt(0)) / 100,
-          penalty: 500, // 5.00%
           stakeType: StakeType.FIXED_30_DAYS
         },
         {
-          title: '90天锁定',
+          title: '90 Day Lock',
           duration: 90,
           apr: Number(stakingStats.currentAPRs[1] || BigInt(0)) / 100,
           bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[1] || BigInt(0)) / 100 : 0,
           maxApr: Number(stakingStats.maxPossibleAPRs[1] || BigInt(0)) / 100,
-          penalty: 1000, // 10.00%
           stakeType: StakeType.FIXED_90_DAYS
         },
         {
-          title: '180天锁定',
+          title: '180 Day Lock',
           duration: 180,
           apr: Number(stakingStats.currentAPRs[2] || BigInt(0)) / 100,
           bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[2] || BigInt(0)) / 100 : 0,
           maxApr: Number(stakingStats.maxPossibleAPRs[2] || BigInt(0)) / 100,
-          penalty: 1500, // 15.00%
           stakeType: StakeType.FIXED_180_DAYS
         },
         {
-          title: '365天锁定',
+          title: '365 Day Lock',
           duration: 365,
           apr: Number(stakingStats.currentAPRs[3] || BigInt(0)) / 100,
           bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[3] || BigInt(0)) / 100 : 0,
           maxApr: Number(stakingStats.maxPossibleAPRs[3] || BigInt(0)) / 100,
-          penalty: 2000, // 20.00%
           stakeType: StakeType.FIXED_365_DAYS
         },
       ];
     } catch (error) {
       console.error('Error processing staking stats:', error);
-      return defaultOptions; // 出错时返回默认选项
+      return defaultOptions; // Return default options on error
     }
   }, [stakingStats]);
   
-  // 处理模拟金额输入变化
-  const _handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value === '' || /^\d+(\.\d*)?$/.test(value)) {
-      setSimulatedAmount(value);
-    }
-  };
-  
   return (
     <MainLayout>
-      <div className="min-h-screen w-full bg-gradient-to-b from-base-200 to-base-100">
-        <div className="container mx-auto px-4 py-12">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-light text-primary mb-3">HashKey Chain 质押</h1>
-            <p className="text-base text-neutral-600">安全高效地质押您的HSK代币，获取被动收益</p>
+      <div className="min-h-screen text-white">
+        {/* Hero Section */}
+        <div className="container mx-auto px-4 pt-16 pb-24">
+          <div className="text-center mb-16">
+            <h1 className="text-5xl font-light text-white mb-6 font-sora">HashKey Chain Staking</h1>
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+              Securely stake your HSK tokens and earn passive income with competitive APR
+            </p>
             
-            {!isConnected && (
-              <div className="mt-6">
-                <p className="text-sm text-neutral-500 mb-4">连接您的钱包开始质押</p>
-              </div>
-            )}
+            {/* Call to action button */}
+            <div className="mt-10">
+              <Link 
+                href="/stake" 
+                className="inline-flex items-center px-8 py-4 rounded-xl bg-primary/80 text-white hover:bg-primary transition-colors text-lg font-medium shadow-lg hover:shadow-xl"
+              >
+                Start Staking
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            {/* 总质押量卡片 */}
-            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 shadow-[0_4px_20px_-4px_rgba(16,24,40,0.08)] border border-white/80 transition-all hover:shadow-[0_4px_20px_-4px_rgba(16,24,40,0.12)]">
-              <div className="flex items-center gap-2 mb-3">
-                <svg className="w-5 h-5 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z M12 12v-2 M12 14h.01" />
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            {/* Total Staked Card */}
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 transition-all hover:border-primary/30 hover:bg-slate-800/80">
+              <div className="flex items-center gap-2 mb-4">
+                <svg className="w-6 h-6 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
                 </svg>
-                <h3 className="text-sm font-medium text-primary/80">总质押量</h3>
+                <h3 className="text-sm font-medium text-slate-300">Total Staked</h3>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-light tracking-tight text-neutral-800">
-                  {typeof totalStaked === 'bigint' ? formatBigInt(totalStaked) : '0'}
-                </span>
-                <span className="text-lg font-light text-neutral-600">HSK</span>
-              </div>
+              {isLoading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-slate-700 rounded w-32"></div>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-light tracking-tight text-white">
+                    {typeof totalStaked === 'bigint' ? formatBigInt(totalStaked) : '0'}
+                  </span>
+                  <span className="text-lg font-light text-slate-400">HSK</span>
+                </div>
+              )}
             </div>
 
-            {/* 当前兑换率卡片 */}
-            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 shadow-[0_4px_20px_-4px_rgba(16,24,40,0.08)] border border-white/80 transition-all hover:shadow-[0_4px_20px_-4px_rgba(16,24,40,0.12)]">
-              <div className="flex items-center gap-2 mb-3">
-                <svg className="w-5 h-5 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {/* Exchange Rate Card */}
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 transition-all hover:border-primary/30 hover:bg-slate-800/80">
+              <div className="flex items-center gap-2 mb-4">
+                <svg className="w-6 h-6 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h12M3 12h8m-8 5h16" />
                 </svg>
-                <h3 className="text-sm font-medium text-primary/80">当前兑换率</h3>
-                <div className="tooltip tooltip-right" data-tip="随着奖励累积，兑换率会增加">
+                <h3 className="text-sm font-medium text-slate-300">Current Rate</h3>
+                <div className="tooltip tooltip-right" data-tip="Rate increases as rewards accumulate">
                   <svg className="w-4 h-4 text-primary/40 hover:text-primary/60 transition-colors cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-light tracking-tight text-neutral-800">1</span>
-                <span className="text-lg font-light text-neutral-600">stHSK</span>
-                <span className="text-neutral-400">=</span>
-                <span className="text-3xl font-light tracking-tight text-neutral-800">
-                  {typeof exchangeRate === 'bigint' ? formatBigInt(exchangeRate) : '1'}
-                </span>
-                <span className="text-lg font-light text-neutral-600">HSK</span>
-              </div>
-            </div>
-
-            {/* 区块奖励卡片 */}
-            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 shadow-[0_4px_20px_-4px_rgba(16,24,40,0.08)] border border-white/80 transition-all hover:shadow-[0_4px_20px_-4px_rgba(16,24,40,0.12)]">
-              <div className="flex items-center gap-2 mb-3">
-                <svg className="w-5 h-5 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                <h3 className="text-sm font-medium text-primary/80">奖励间隔</h3>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-light tracking-tight text-neutral-800">1 区块</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* 前往质押按钮 */}
-          <div className="text-center mb-16">
-            <Link 
-              href="/stake" 
-              className="inline-flex items-center px-8 py-3 rounded-xl bg-primary/90 text-white hover:bg-primary transition-colors text-sm font-medium shadow-[0_1px_2px_rgba(16,24,40,0.05)] hover:shadow-[0_1px_2px_rgba(16,24,40,0.1)]"
-            >
-              前往质押页面
-              <svg className="w-4 h-4 ml-2 -mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
-          </div>
-          
-          {/* 模拟质押金额输入 */}
-          {/* <div className="mb-8 max-w-md mx-auto">
-            <h2 className="text-xl font-semibold mb-3 text-center text-primary/80">模拟质押金额</h2>
-            <div className="relative">
-              <input
-                type="text"
-                value={simulatedAmount}
-                onChange={_handleAmountChange}
-                className="input input-bordered w-full text-center text-primary/80"
-                placeholder="输入HSK数量"
-              />
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-base-100 bg-opacity-50">
-                  <span className="loading loading-spinner loading-md"></span>
+              {isLoading ? (
+                <div className="animate-pulse flex items-center">
+                  <div className="h-8 bg-slate-700 rounded w-8 mr-2"></div>
+                  <div className="h-8 bg-slate-700 rounded w-16 mx-2"></div>
+                  <div className="h-8 bg-slate-700 rounded w-24 ml-2"></div>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-light tracking-tight text-white">1</span>
+                  <span className="text-lg font-light text-slate-400">stHSK</span>
+                  <span className="text-slate-500">=</span>
+                  <span className="text-3xl font-light tracking-tight text-white">
+                    {typeof exchangeRate === 'bigint' ? formatBigInt(exchangeRate) : '1'}
+                  </span>
+                  <span className="text-lg font-light text-slate-400">HSK</span>
                 </div>
               )}
             </div>
-          </div> */}
-          
-          {/* 质押选项卡片 */}
-          <h2 className="text-2xl font-semibold mb-6 text-center text-primary/80">质押选项</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+
+            {/* Reward Interval Card */}
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 transition-all hover:border-primary/30 hover:bg-slate-800/80">
+              <div className="flex items-center gap-2 mb-4">
+                <svg className="w-6 h-6 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 className="text-sm font-medium text-slate-300">Reward Interval</h3>
+              </div>
+              {isLoading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-slate-700 rounded w-24"></div>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-light tracking-tight text-white">1 Block</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Staking Options Section */}
+        <div className="container mx-auto px-4 py-16 bg-slate-800/30">
+          <h2 className="text-3xl font-light mb-10 text-center text-white">Staking Options</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             {stakingOptions.map((option, index) => (
-              <StakingOptionCard
-                key={index}
-                title={option.title}
-                duration={`${option.duration} 天`}
-                apr={`${option.apr.toFixed(2)}%`}
-                bonus={option.bonus > 0 ? `+${option.bonus.toFixed(2)}%` : undefined}
-                maxApr={`${option.maxApr.toFixed(2)}%`}
-                penalty={`${(option.penalty / 100).toFixed(2)}%`}
-                stakeType={option.stakeType}
-                isDisabled={!isConnected}
-              />
+              <div key={index} className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden hover:border-primary/30 transition-all">
+                <div className="p-6 border-b border-slate-700/50 text-center">
+                  <h3 className="text-xl font-medium text-white">{option.title}</h3>
+                </div>
+                
+                <div className="p-6 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Duration</span>
+                    <span className="text-white font-medium">{option.duration} days</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">APR</span>
+                    <div>
+                      <span className="text-white font-medium">{option.apr.toFixed(2)}%</span>
+                      {option.bonus > 0 && (
+                        <span className="text-emerald-400 ml-1">
+                          (+{option.bonus.toFixed(2)}%)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Max APR</span>
+                    <span className="text-white font-medium">{option.maxApr.toFixed(2)}%</span>
+                  </div>
+                </div>
+                
+                <div className="p-6 border-t border-slate-700/50">
+                  <Link 
+                    href={`/stake?type=${option.stakeType}`} 
+                    className="block w-full py-3 text-center bg-primary/80 text-white rounded-lg hover:bg-primary transition-colors"
+                  >
+                    Select
+                  </Link>
+                </div>
+              </div>
             ))}
+          </div>
+          
+          {/* Features Section */}
+          <div className="max-w-4xl mx-auto mt-20">
+            <h2 className="text-3xl font-light mb-10 text-center text-white">Key Benefits</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-primary/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-white mb-2">Competitive APR</h3>
+                <p className="text-slate-400">Earn up to 12% annual returns on your staked HSK tokens</p>
+              </div>
+              
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-primary/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-white mb-2">Security First</h3>
+                <p className="text-slate-400">Your assets are protected by industry-leading security protocols</p>
+              </div>
+              
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-primary/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-white mb-2">Auto-Compounding</h3>
+                <p className="text-slate-400">Rewards automatically accumulate to maximize your returns</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

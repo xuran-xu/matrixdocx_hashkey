@@ -27,7 +27,7 @@ export function useStakingInfo(simulatedAmount: string = '1000') {
     stakingStats: null,
     exchangeRate: BigInt(0),
     minStakeAmount: BigInt(0),
-    isLoading: false,
+    isLoading: true,
   });
   
   useEffect(() => {

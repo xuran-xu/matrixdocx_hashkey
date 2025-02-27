@@ -8,33 +8,17 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sora: ['var(--font-sora)', 'sans-serif'],
+      },
       colors: {
-        primary: '#2A4858', // 深青灰色
-        secondary: '#8EADC3', // 柔和蓝灰色
-        accent: '#95B2B8', // 淡青色
+        primary: '#2A4858', // Deep teal-gray
+        secondary: '#8EADC3', // Soft blue-gray
+        accent: '#95B2B8', // Light teal
       },
     },
   },
-  plugins: [require('daisyui')],
-  daisyui: {
-    themes: [
-      {
-        mytheme: {
-          "primary": "#2A4858",
-          "secondary": "#8EADC3",
-          "accent": "#95B2B8",
-          "neutral": "#4A5568",
-          "base-100": "#FFFFFF",
-          "base-200": "#F7FAFC",
-          "base-300": "#E2E8F0",
-          "info": "#63B3ED",
-          "success": "#68D391",
-          "warning": "#F6AD55",
-          "error": "#FC8181",
-        },
-      },
-    ],
-  },
+  plugins: [],
 }
 
 export default config
