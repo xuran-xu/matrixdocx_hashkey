@@ -7,6 +7,9 @@ import { formatBigInt } from '@/utils/format';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
 import { useStakingInfo } from '@/hooks/useStakingContracts';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import Image from 'next/image';
 
 export default function Home() {
   // 添加本地loading状态，初始为true
@@ -15,9 +18,86 @@ export default function Home() {
   const [debouncedAmount, setDebouncedAmount] = useState(simulatedAmount);
   const { address: _address, isConnected } = useAccount();
   const { totalStaked, stakingStats, exchangeRate, isLoading: apiLoading } = useStakingInfo(debouncedAmount);
+  const router = useRouter();
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [serverTime, setServerTime] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLaunched, setIsLaunched] = useState(false);
   
   // 结合API加载状态和初始加载状态
-  const isLoading = initialLoading || apiLoading;
+  const isLoadingCombined = initialLoading || apiLoading;
+  
+  // Beijing launch time - March 2, 2025 00:00:00
+  const launchTime = new Date('2025-03-02T00:00:00+08:00').getTime();
+
+  // 获取服务器时间并检查是否已经发布
+  useEffect(() => {
+    const fetchServerTime = async () => {
+      try {
+        const response = await axios.get('/api/time');
+        const serverTimeStamp = new Date(response.data.time).getTime();
+        const serverTimeObj = new Date(serverTimeStamp);
+        setServerTime(serverTimeObj);
+        
+        // 检查是否已过发布时间
+        const isPastLaunchTime = serverTimeStamp >= launchTime;
+        setIsLaunched(isPastLaunchTime);
+        setIsLoading(false);
+        
+        console.log('Server time:', serverTimeObj);
+        console.log('Launch time:', new Date(launchTime));
+        console.log('Is past launch time:', isPastLaunchTime);
+      } catch (error) {
+        console.error('Failed to fetch server time:', error);
+        // 如果获取服务器时间失败，使用客户端时间
+        const now = new Date();
+        setServerTime(now);
+        setIsLaunched(now.getTime() >= launchTime);
+        setIsLoading(false);
+      }
+    };
+
+    fetchServerTime();
+  }, [launchTime]);
+
+  // 设置倒计时间隔
+  useEffect(() => {
+    if (!serverTime || isLaunched) return;
+
+    const calculateTimeLeft = () => {
+      // 基于服务器时间 + 自获取以来的经过时间计算
+      const elapsedSinceFetch = Date.now() - serverTime.getTime();
+      const adjustedNow = new Date(serverTime.getTime() + elapsedSinceFetch);
+      const timeDiff = launchTime - adjustedNow.getTime();
+      
+      if (timeDiff <= 0) {
+        setIsLaunched(true);
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      }
+      
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+      
+      return { days, hours, minutes, seconds };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+    
+    const interval = setInterval(() => {
+      const newTimeLeft = calculateTimeLeft();
+      setTimeLeft(newTimeLeft);
+      
+      // 如果倒计时结束，刷新页面
+      if (newTimeLeft.days === 0 && newTimeLeft.hours === 0 && 
+          newTimeLeft.minutes === 0 && newTimeLeft.seconds === 0) {
+        window.location.reload();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [serverTime, isLaunched, launchTime]);
   
   // 当数据加载完成后，关闭初始加载状态
   useEffect(() => {
@@ -127,6 +207,60 @@ export default function Home() {
     }
   }, [stakingStats]);
   
+  // 显示加载状态
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  // 未发布：显示倒计时
+  if (!isLaunched) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
+        <div className="container mx-auto px-4 py-8 max-w-4xl text-center">
+          
+          <h1 className="text-5xl md:text-7xl font-bold pb-8 bg-gradient-to-r from-cyan-400 to-primary bg-clip-text text-transparent">
+            HSK Staking
+          </h1>
+          
+          <p className="text-lg md:text-2xl mb-10 text-gray-300">
+            Get ready for the future of staking. Launching soon.
+          </p>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center mb-10 md:mb-16 max-w-md md:max-w-2xl mx-auto">
+            <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
+              <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.days}</div>
+              <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Days</div>
+            </div>
+            
+            <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
+              <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.hours}</div>
+              <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Hours</div>
+            </div>
+            
+            <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
+              <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.minutes}</div>
+              <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Minutes</div>
+            </div>
+            
+            <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
+              <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.seconds}</div>
+              <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Seconds</div>
+            </div>
+          </div>
+          
+          <div className="text-base md:text-lg text-gray-400">
+            Launching on March 2, 2025 00:00 Beijing Time
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // 已发布：显示主内容
   return (
     <MainLayout>
       <div className="min-h-screen text-white">
@@ -162,7 +296,7 @@ export default function Home() {
                 </svg>
                 <h3 className="text-sm font-medium text-slate-300">Total Staked</h3>
               </div>
-              {isLoading ? (
+              {isLoadingCombined ? (
                 <div className="animate-pulse">
                   <div className="h-8 bg-slate-700 rounded w-32"></div>
                 </div>
@@ -189,7 +323,7 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-              {isLoading ? (
+              {isLoadingCombined ? (
                 <div className="animate-pulse flex items-center">
                   <div className="h-8 bg-slate-700 rounded w-8 mr-2"></div>
                   <div className="h-8 bg-slate-700 rounded w-16 mx-2"></div>
@@ -216,7 +350,7 @@ export default function Home() {
                 </svg>
                 <h3 className="text-sm font-medium text-slate-300">Reward Interval</h3>
               </div>
-              {isLoading ? (
+              {isLoadingCombined ? (
                 <div className="animate-pulse">
                   <div className="h-8 bg-slate-700 rounded w-24"></div>
                 </div>
