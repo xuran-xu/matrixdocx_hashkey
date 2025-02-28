@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   // 北京发布时间 - 2025年3月2日00:00:00
-  const launchTime = new Date('2025-03-02T00:00:00+08:00').getTime();
+  const launchTime = new Date('2025-03-02T20:00:00+08:00').getTime();
   const now = Date.now();
   
   console.log('Current time:', new Date(now).toISOString());

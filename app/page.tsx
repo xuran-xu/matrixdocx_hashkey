@@ -27,8 +27,8 @@ export default function Home() {
   // 结合API加载状态和初始加载状态
   const isLoadingCombined = initialLoading || apiLoading;
   
-  // Beijing launch time - March 2, 2025 00:00:00
-  const launchTime = new Date('2025-03-02T00:00:00+08:00').getTime();
+  // Beijing launch time - March 2, 2025 20:00:00
+  const launchTime = new Date('2025-03-02T20:00:00+08:00').getTime();
 
   // 获取服务器时间并检查是否已经发布
   useEffect(() => {
@@ -253,7 +253,7 @@ export default function Home() {
           </div>
           
           <div className="text-base md:text-lg text-gray-400">
-            Launching on March 2, 2025 00:00 Beijing Time
+            Launching on March 2, 2025 20:00 UTC+8
           </div>
         </div>
       </div>
