@@ -227,7 +227,7 @@ export default function Home() {
   // 未发布或应用未启用：显示倒计时
   if (!isLaunched || !isAppEnabled) {
     // 显示不同的消息，取决于是时间未到还是应用未启用
-    const message = "Launching on March 2, 2025 20:00 UTC+8"
+    const message = "Launching on March 3, 2025 20:00 UTC+8"
     
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
