@@ -164,49 +164,121 @@ export default function PortfolioPage() {
         const lockEndTime = BigInt(position.info.lockEndTime);
         const isLocked = now < lockEndTime;
         
+        // 计算锁定时间（秒）
+        const remainingTime = lockEndTime - now;
+        
+        // 检测是否为测试选项
+        let isTestOption = false;
+        
         if (!isLocked) {
           // Unlocked stakes use 30-day lock APR cap
           maxAPR = BigInt(120); // 1.2%
+        } else if (remainingTime <= BigInt(60)) {
+          // 1分钟测试选项
+          maxAPR = BigInt(1500); // 15%
+          isTestOption = true;
+        } else if (remainingTime <= BigInt(3 * 60)) {
+          // 3分钟测试选项
+          maxAPR = BigInt(1750); // 17.5%
+          isTestOption = true;
+        } else if (remainingTime <= BigInt(5 * 60)) {
+          // 5分钟测试选项
+          maxAPR = BigInt(2000); // 20%
+          isTestOption = true;
+        } else if (remainingTime <= BigInt(30 * 24 * 3600)) {
+          maxAPR = BigInt(120); // 30-day lock: 1.2%
+        } else if (remainingTime <= BigInt(90 * 24 * 3600)) {
+          maxAPR = BigInt(350); // 90-day lock: 3.5%
+        } else if (remainingTime <= BigInt(180 * 24 * 3600)) {
+          maxAPR = BigInt(650); // 180-day lock: 6.5%
         } else {
-          // Locked stakes based on remaining time
-          const remainingTime = lockEndTime - now;
-          
-          if (remainingTime <= BigInt(30 * 24 * 3600)) {
-            maxAPR = BigInt(120); // 30-day lock: 1.2%
-          } else if (remainingTime <= BigInt(90 * 24 * 3600)) {
-            maxAPR = BigInt(350); // 90-day lock: 3.5%
-          } else if (remainingTime <= BigInt(180 * 24 * 3600)) {
-            maxAPR = BigInt(650); // 180-day lock: 6.5%
-          } else {
-            maxAPR = BigInt(1200); // 365-day lock: 12.0%
-          }
+          maxAPR = BigInt(1200); // 365-day lock: 12.0%
         }
         
-        // Calculate max possible reward for this period based on max APR
-        const maxRewardForPeriod = (position.info.hskAmount * maxAPR * blockDiff) / 
-                                  (BASIS_POINTS * BLOCKS_PER_YEAR);
+        // 测试选项使用特殊计算逻辑
+        let userNewRewards;
         
-        // Calculate user's share of global rewards
-        const userShareRatio = position.info.sharesAmount * BigInt(10000) / rewardParams.totalShares;
-        const baseNewRewards = (estimatedNewRewards * userShareRatio) / BigInt(10000);
-        
-        // Apply APR limit, take the smaller value
-        const userNewRewards = baseNewRewards < maxRewardForPeriod ? 
-                              baseNewRewards : maxRewardForPeriod;
+        if (isTestOption) {
+          // 对于测试选项，使用理论APR计算
+          // 将APR从基点转换为百分比
+          const aprPercentage = Number(maxAPR) / 10000; // 转换为小数形式的百分比
+          
+          // 计算质押时间占全年的比例
+          // 假设测试选项的总质押时间为30天（与标准选项保持一致）
+          const totalStakingTime = BigInt(30 * 24 * 3600); // 30天的秒数
+          const elapsedTime = totalStakingTime - remainingTime; // 已经过去的时间
+          const yearInSeconds = BigInt(365 * 24 * 3600); // 一年的秒数
+          const timeRatio = Number(elapsedTime) / Number(yearInSeconds); // 时间比例
+          
+          // 将 wei 转换为 HSK 进行计算
+          const hskAmountInHSK = Number(position.info.hskAmount) / 1e18;
+          
+          // 计算理论收益（HSK）
+          const rewardInHSK = hskAmountInHSK * aprPercentage * timeRatio;
+          
+          // 将收益转回 wei
+          userNewRewards = BigInt(Math.floor(rewardInHSK * 1e18));
+          
+          // 设置合理的上限，防止计算错误
+          // 最大奖励不应超过本金的1%（对于短期测试选项）
+          const onePercentOfPrincipal = position.info.hskAmount / BigInt(100);
+          if (userNewRewards > onePercentOfPrincipal) {
+            console.log(`[测试选项] 质押#${position.id} - 收益超过本金的1%，已限制:`, {
+              原始收益: formatBigInt(userNewRewards),
+              限制后: formatBigInt(onePercentOfPrincipal)
+            });
+            userNewRewards = onePercentOfPrincipal;
+          }
+          
+          console.log(`[测试选项] 质押#${position.id} - 收益计算详情:`, {
+            质押金额: formatBigInt(position.info.hskAmount),
+            质押金额HSK: hskAmountInHSK.toString(),
+            APR百分比: aprPercentage.toString(),
+            时间比例: timeRatio.toString(),
+            理论收益HSK: rewardInHSK.toString(),
+            收益Wei: userNewRewards.toString()
+          });
+        } else {
+          // 标准选项使用正常的计算逻辑
+          // Calculate max possible reward for this period based on max APR
+          const maxRewardForPeriod = (position.info.hskAmount * maxAPR * blockDiff) / 
+                                    (BASIS_POINTS * BLOCKS_PER_YEAR);
+          
+          // Calculate user's share of global rewards
+          const userShareRatio = position.info.sharesAmount * BigInt(10000) / rewardParams.totalShares;
+          const baseNewRewards = (estimatedNewRewards * userShareRatio) / BigInt(10000);
+          
+          // Apply APR limit, take the smaller value
+          userNewRewards = baseNewRewards < maxRewardForPeriod ? 
+                          baseNewRewards : maxRewardForPeriod;
+        }
         
         // Calculate estimated total profit
         const confirmedProfit = position.info.currentHskValue - position.info.hskAmount;
-        const estimatedProfit = confirmedProfit + userNewRewards;
+        let estimatedProfit = confirmedProfit + userNewRewards;
+        
+        // For test options, ensure total profit doesn't exceed 1% of principal
+        if (isTestOption) {
+          const maxAllowedProfit = position.info.hskAmount / BigInt(100); // 1% of principal
+          if (estimatedProfit > maxAllowedProfit) {
+            console.log(`[测试选项] 质押#${position.id} - 总收益超过本金的1%，已限制:`, {
+              原始总收益: formatBigInt(estimatedProfit),
+              限制后: formatBigInt(maxAllowedProfit)
+            });
+            estimatedProfit = maxAllowedProfit;
+            // Adjust userNewRewards accordingly
+            userNewRewards = estimatedProfit > confirmedProfit ? estimatedProfit - confirmedProfit : BigInt(0);
+          }
+        }
         
         // Log detailed calculation info (for debugging)
         if (position.id === 2) { // Only show details for the first stake
           console.log(`Stake #${position.id} calculation details:`, {
             shares: position.info.sharesAmount.toString(),
             totalShares: rewardParams.totalShares.toString(),
-            shareRatio: (Number(userShareRatio) / 10000).toFixed(6),
-            baseReward: baseNewRewards.toString(),
+            shareRatio: rewardParams.totalShares > 0 ? (Number(position.info.sharesAmount * BigInt(10000) / rewardParams.totalShares) / 10000).toFixed(6) : '0',
             maxAPR: (Number(maxAPR) / 100).toFixed(2) + '%',
-            maxRewardForPeriod: maxRewardForPeriod.toString(),
+            isTestOption: isTestOption,
             appliedReward: userNewRewards.toString(),
             confirmedProfit: confirmedProfit.toString(),
             estimatedProfit: estimatedProfit.toString()
@@ -224,7 +296,21 @@ export default function PortfolioPage() {
       const newEstimatedTotalRewards = updatedPositions
         .filter(pos => !pos.info.isWithdrawn)
         .reduce((sum, pos) => {
+          // Use the calculated estimatedProfit which includes both confirmed profit and pending rewards
           const profit = pos.estimatedProfit || (pos.info.currentHskValue - pos.info.hskAmount);
+          
+          // For test options, ensure we're not adding excessive rewards to the total
+          const now = BigInt(Math.floor(Date.now() / 1000));
+          const lockEndTime = BigInt(pos.info.lockEndTime);
+          const remainingTime = lockEndTime - now;
+          const isTestOption = remainingTime > 0 && remainingTime <= BigInt(5 * 60);
+          
+          if (isTestOption) {
+            // For test options, limit contribution to 1% of principal
+            const maxAllowedProfit = pos.info.hskAmount / BigInt(100);
+            return sum + (profit > maxAllowedProfit ? maxAllowedProfit : profit);
+          }
+          
           return sum + profit;
         }, BigInt(0));
       
@@ -266,27 +352,66 @@ export default function PortfolioPage() {
       // Calculate total confirmed rewards for reference only
       const confirmedTotalReward = stakesInfo
         .filter(info => !info.error && !info.isWithdrawn)
-        .reduce((sum, info) => sum + info.reward, BigInt(0));
+        .reduce((sum, info) => sum + (info.currentHskValue - info.hskAmount), BigInt(0));
       
       setTotalRewards(confirmedTotalReward);
       
       // Convert to required format - include all positions, including withdrawn ones
       const positions = stakesInfo
         .filter(info => !info.error)
-        .map(info => ({
-          id: info.id,
-          info: {
-            sharesAmount: info.sharesAmount,
-            hskAmount: info.hskAmount,
-            currentHskValue: info.currentHskValue,
-            lockEndTime: info.lockEndTime,
-            isWithdrawn: info.isWithdrawn,
-            isLocked: info.isLocked
-          },
-          // Initialize with confirmed values, will be updated by calculateEstimatedRewards
-          estimatedProfit: info.reward,
-          pendingReward: BigInt(0)
-        }));
+        .map(info => {
+          // 检测是否为测试选项
+          const now = Math.floor(Date.now() / 1000);
+          const lockEndTime = Number(info.lockEndTime);
+          const remainingTime = lockEndTime - now;
+          const isTestOption = remainingTime > 0 && remainingTime <= 5 * 60;
+          
+          // 计算确认的收益
+          const confirmedProfit = info.currentHskValue - info.hskAmount;
+          
+          // 对于测试选项，设置一个小的初始奖励值
+          let initialReward = confirmedProfit;
+          if (isTestOption) {
+            // 如果确认的收益太小，设置为本金的0.01%作为初始奖励
+            const minReward = info.hskAmount / BigInt(10000);
+            // 最大不超过本金的1%
+            const maxReward = info.hskAmount / BigInt(100);
+            
+            // 确保收益在合理范围内
+            if (confirmedProfit < minReward) {
+              initialReward = minReward;
+            } else if (confirmedProfit > maxReward) {
+              initialReward = maxReward;
+            }
+            
+            console.log(`[初始化] 测试选项 #${info.id} 设置初始奖励:`, formatBigInt(initialReward));
+          }
+          
+          // 记录详细的收益信息
+          console.log(`[质押 #${info.id}] 收益详情:`, {
+            状态: info.isWithdrawn ? '已提取' : (info.isLocked ? '锁定中' : '已解锁'),
+            初始质押: formatBigInt(info.hskAmount),
+            当前价值: formatBigInt(info.currentHskValue),
+            确认收益: formatBigInt(confirmedProfit),
+            初始化收益: formatBigInt(initialReward),
+            是否测试选项: isTestOption
+          });
+          
+          return {
+            id: info.id,
+            info: {
+              sharesAmount: info.sharesAmount,
+              hskAmount: info.hskAmount,
+              currentHskValue: info.currentHskValue,
+              lockEndTime: info.lockEndTime,
+              isWithdrawn: info.isWithdrawn,
+              isLocked: info.isLocked
+            },
+            // Initialize with confirmed values, will be updated by calculateEstimatedRewards
+            estimatedProfit: initialReward,
+            pendingReward: BigInt(0)
+          };
+        });
       
       setStakedPositions(positions);
       setLastUpdateTime(new Date());
@@ -543,21 +668,85 @@ export default function PortfolioPage() {
                         <p className="text-sm text-slate-400 mb-1">Current Value</p>
                         <p className="text-xl font-medium text-white">
                           {/* Show estimated current value */}
-                          {formatBigInt(position.info.hskAmount + (position.estimatedProfit || BigInt(0)))} HSK
+                          {(() => {
+                            // Get the estimated profit with limits applied
+                            const estimatedProfit = position.estimatedProfit || (position.info.currentHskValue - position.info.hskAmount);
+                            
+                            // Check if this is a test option
+                            const now = Math.floor(Date.now() / 1000);
+                            const lockEndTime = Number(position.info.lockEndTime);
+                            const remainingTime = lockEndTime - now;
+                            const isTestOption = remainingTime > 0 && remainingTime <= 5 * 60;
+                            
+                            // For test options, ensure the displayed value doesn't exceed principal + 1%
+                            if (isTestOption) {
+                              const maxAllowedProfit = position.info.hskAmount / BigInt(100);
+                              const limitedProfit = estimatedProfit > maxAllowedProfit ? maxAllowedProfit : estimatedProfit;
+                              return formatBigInt(position.info.hskAmount + limitedProfit);
+                            }
+                            
+                            // For regular options, show the normal calculation
+                            return formatBigInt(position.info.hskAmount + estimatedProfit);
+                          })()}
+                          {' HSK'}
                         </p>
                       </div>
                       
                       <div className="w-full sm:w-auto mb-4 sm:mb-0">
-                        <p className="text-sm text-slate-400 mb-1">Profit</p>
-                        <p className="text-xl font-medium text-green-500">
-                          {/* Only show estimated profit */}
-                          +{formatBigInt(position.estimatedProfit || BigInt(0))} HSK
-                          {position.pendingReward && position.pendingReward > 0 && (
-                            <span className="block text-xs text-green-400">
-                              (+{formatBigInt(position.pendingReward)} since last update)
-                            </span>
-                          )}
-                        </p>
+                        <p className="text-sm text-slate-400 mb-1">APY</p>
+                        {(() => {
+                          const now = Math.floor(Date.now() / 1000);
+                          const lockEndTime = Number(position.info.lockEndTime);
+                          const remainingTime = lockEndTime - now;
+                          
+                          // 确定APY显示值
+                          let aprDisplay = '';
+                          
+                          if (remainingTime > 0) {
+                            // 根据锁定时间确定APY
+                            if (remainingTime <= 60) {
+                              // 1分钟测试选项
+                              aprDisplay = '15%';
+                            } else if (remainingTime <= 3 * 60) {
+                              // 3分钟测试选项
+                              aprDisplay = '17.5%';
+                            } else if (remainingTime <= 5 * 60) {
+                              // 5分钟测试选项
+                              aprDisplay = '20%';
+                            } else if (remainingTime <= 30 * 24 * 3600) {
+                              // 30天锁定
+                              aprDisplay = '1.2%';
+                            } else if (remainingTime <= 90 * 24 * 3600) {
+                              // 90天锁定
+                              aprDisplay = '3.5%';
+                            } else if (remainingTime <= 180 * 24 * 3600) {
+                              // 180天锁定
+                              aprDisplay = '6.5%';
+                            } else {
+                              // 365天锁定
+                              aprDisplay = '12.0%';
+                            }
+                          } else {
+                            // 已解锁的质押
+                            aprDisplay = '1.2%';
+                          }
+                          
+                          // 检测是否为测试选项
+                          const isTestOption = remainingTime > 0 && remainingTime <= 5 * 60;
+                          
+                          return (
+                            <div>
+                              <p className={`text-xl font-medium ${isTestOption ? 'text-blue-500' : 'text-green-500'}`}>
+                                {aprDisplay}
+                              </p>
+                              {isTestOption && (
+                                <span className="inline-block px-2 py-0.5 text-xs bg-blue-500/30 text-blue-300 rounded-full mt-1">
+                                  {remainingTime <= 60 ? '1 Min' : remainingTime <= 3 * 60 ? '3 Min' : '5 Min'} Test Option
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                       
                       <div className="w-full sm:w-auto">
@@ -656,6 +845,21 @@ export default function PortfolioPage() {
                           <p className="text-xl font-medium text-white">
                             {formatBigInt(position.info.currentHskValue)} HSK
                           </p>
+                        </div>
+                      </div>
+                      
+                      {/* Add profit display for completed stakes */}
+                      <div className="mt-2 bg-green-900/20 border border-green-800/30 rounded-lg p-3">
+                        <div className="flex items-center">
+                          <svg className="w-5 h-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div>
+                            <p className="text-sm text-green-400">Total Profit</p>
+                            <p className="text-lg font-medium text-green-500">
+                              +{formatBigInt(position.info.currentHskValue - position.info.hskAmount)} HSK
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>

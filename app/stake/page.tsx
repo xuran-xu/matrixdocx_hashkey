@@ -28,51 +28,153 @@ export default function StakePage() {
   const getStakingOptions = () => {
     if (!stakingStats) return [];
     
-    // Ensure stakingStats is in array form and has enough elements
-    if (!Array.isArray(stakingStats) || stakingStats.length < 5) {
-      return [];
-    }
-    
-    // Double type assertion, convert to unknown first then to tuple
-    const stats = (stakingStats as unknown) as [bigint, bigint[], bigint[], bigint[], bigint[]];
-    const currentAPRs = stats[2];
-    const maxPossibleAPRs = stats[3];
-    const baseBonus = stats[4];
-    
-    return [
+    // Default options when contract data is not available
+    const defaultOptions = [
       {
         title: '30 Day Lock',
         duration: 30,
-        apr: Number(currentAPRs[0] || 0),
-        bonus: Number(baseBonus[0] || 0),
-        maxApr: Number(maxPossibleAPRs[0] || 0),
-        stakeType: StakeType.FIXED_30_DAYS,
+        durationDisplay: '30 days',
+        apr: 1.20,
+        bonus: 0,
+        maxApr: 1.20,
+        stakeType: StakeType.FIXED_30_DAYS
       },
       {
         title: '90 Day Lock',
         duration: 90,
-        apr: Number(currentAPRs[1] || 0),
-        bonus: Number(baseBonus[1] || 0),
-        maxApr: Number(maxPossibleAPRs[1] || 0),
-        stakeType: StakeType.FIXED_90_DAYS,
+        durationDisplay: '90 days',
+        apr: 3.50,
+        bonus: 8.00,
+        maxApr: 3.50,
+        stakeType: StakeType.FIXED_90_DAYS
       },
       {
         title: '180 Day Lock',
         duration: 180,
-        apr: Number(currentAPRs[2] || 0),
-        bonus: Number(baseBonus[2] || 0),
-        maxApr: Number(maxPossibleAPRs[2] || 0),
-        stakeType: StakeType.FIXED_180_DAYS,
+        durationDisplay: '180 days',
+        apr: 6.50,
+        bonus: 20.00,
+        maxApr: 6.50,
+        stakeType: StakeType.FIXED_180_DAYS
       },
       {
         title: '365 Day Lock',
         duration: 365,
-        apr: Number(currentAPRs[3] || 0),
-        bonus: Number(baseBonus[3] || 0),
-        maxApr: Number(maxPossibleAPRs[3] || 0),
-        stakeType: StakeType.FIXED_365_DAYS,
+        durationDisplay: '365 days',
+        apr: 12.00,
+        bonus: 40.00,
+        maxApr: 12.00,
+        stakeType: StakeType.FIXED_365_DAYS
+      },
+      {
+        title: '1 Minute Lock (Test)',
+        duration: 1/1440,  // 1 minute in days
+        durationDisplay: '1 minute',
+        apr: 15.00,
+        bonus: 50.00,
+        maxApr: 15.00,
+        stakeType: StakeType.FIXED_1_MINUTE
+      },
+      {
+        title: '3 Minutes Lock (Test)',
+        duration: 3/1440,  // 3 minutes in days
+        durationDisplay: '3 minutes',
+        apr: 17.50,
+        bonus: 75.00,
+        maxApr: 17.50,
+        stakeType: StakeType.FIXED_3_MINUTES
+      },
+      {
+        title: '5 Minutes Lock (Test)',
+        duration: 5/1440,  // 5 minutes in days
+        durationDisplay: '5 minutes',
+        apr: 20.00,
+        bonus: 100.00,
+        maxApr: 20.00,
+        stakeType: StakeType.FIXED_5_MINUTES
       },
     ];
+    
+    // If no contract data or missing required properties, return default options
+    if (!stakingStats || !stakingStats.currentAPRs || !stakingStats.maxPossibleAPRs) {
+      console.log('Using default staking options');
+      return defaultOptions;
+    }
+    
+    try {
+      console.log('Calculating staking options from contract data:', stakingStats);
+      
+      // Extract data and calculate
+      return [
+        {
+          title: '30 Day Lock',
+          duration: 30,
+          durationDisplay: '30 days',
+          apr: Number(stakingStats.currentAPRs[0] || BigInt(0)) / 100,
+          bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[0] || BigInt(0)) / 100 : 0,
+          maxApr: Number(stakingStats.maxPossibleAPRs[0] || BigInt(0)) / 100,
+          stakeType: StakeType.FIXED_30_DAYS
+        },
+        {
+          title: '90 Day Lock',
+          duration: 90,
+          durationDisplay: '90 days',
+          apr: Number(stakingStats.currentAPRs[1] || BigInt(0)) / 100,
+          bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[1] || BigInt(0)) / 100 : 0,
+          maxApr: Number(stakingStats.maxPossibleAPRs[1] || BigInt(0)) / 100,
+          stakeType: StakeType.FIXED_90_DAYS
+        },
+        {
+          title: '180 Day Lock',
+          duration: 180,
+          durationDisplay: '180 days',
+          apr: Number(stakingStats.currentAPRs[2] || BigInt(0)) / 100,
+          bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[2] || BigInt(0)) / 100 : 0,
+          maxApr: Number(stakingStats.maxPossibleAPRs[2] || BigInt(0)) / 100,
+          stakeType: StakeType.FIXED_180_DAYS
+        },
+        {
+          title: '365 Day Lock',
+          duration: 365,
+          durationDisplay: '365 days',
+          apr: Number(stakingStats.currentAPRs[3] || BigInt(0)) / 100,
+          bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[3] || BigInt(0)) / 100 : 0,
+          maxApr: Number(stakingStats.maxPossibleAPRs[3] || BigInt(0)) / 100,
+          stakeType: StakeType.FIXED_365_DAYS
+        },
+        // 测试选项使用默认值，因为合约不返回这些数据
+        {
+          title: '1 Minute Lock (Test)',
+          duration: 1/1440,  // 1 minute in days
+          durationDisplay: '1 minute',
+          apr: 15.00, // 使用默认值
+          bonus: 50.00, // 使用默认值
+          maxApr: 15.00, // 使用默认值
+          stakeType: StakeType.FIXED_1_MINUTE
+        },
+        {
+          title: '3 Minutes Lock (Test)',
+          duration: 3/1440,  // 3 minutes in days
+          durationDisplay: '3 minutes',
+          apr: 17.50, // 使用默认值
+          bonus: 75.00, // 使用默认值
+          maxApr: 17.50, // 使用默认值
+          stakeType: StakeType.FIXED_3_MINUTES
+        },
+        {
+          title: '5 Minutes Lock (Test)',
+          duration: 5/1440,  // 5 minutes in days
+          durationDisplay: '5 minutes',
+          apr: 20.00, // 使用默认值
+          bonus: 100.00, // 使用默认值
+          maxApr: 20.00, // 使用默认值
+          stakeType: StakeType.FIXED_5_MINUTES
+        },
+      ];
+    } catch (error) {
+      console.error('Error processing staking stats:', error);
+      return defaultOptions; // Return default options on error
+    }
   };
   
   const stakingOptions = getStakingOptions();
@@ -88,6 +190,12 @@ export default function StakePage() {
         return StakeType.FIXED_180_DAYS;
       case 365:
         return StakeType.FIXED_365_DAYS;
+      case 1/1440:  // 1 minute
+        return StakeType.FIXED_1_MINUTE;
+      case 3/1440:  // 3 minutes
+        return StakeType.FIXED_3_MINUTES;
+      case 5/1440:  // 5 minutes
+        return StakeType.FIXED_5_MINUTES;
       default:
         return StakeType.FIXED_30_DAYS;
     }
@@ -185,7 +293,7 @@ export default function StakePage() {
                 <h2 className="text-2xl font-light text-white mb-6">Select Lock Period</h2>
                 
                 {/* Lock period selection grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
                   {statsLoading ? (
                     // Skeleton loading state
                     Array(4).fill(0).map((_, index) => (
@@ -212,16 +320,16 @@ export default function StakePage() {
                         <div className="text-lg font-medium text-white mb-2">{option.title}</div>
                         <div className="flex justify-between items-center mb-1">
                           <div className="text-sm text-slate-400">Duration</div>
-                          <div className="text-base text-white">{option.duration} days</div>
+                          <div className="text-base text-white">{option.durationDisplay}</div>
                         </div>
                         <div className="flex justify-between items-center mb-1">
                           <div className="text-sm text-slate-400">APR</div>
-                          <div className="text-lg font-bold text-cyan-400">{(option.apr / 100).toFixed(2)}%</div>
+                          <div className="text-lg font-bold text-cyan-400">{option.apr.toFixed(2)}%</div>
                         </div>
                         <div className="flex justify-between items-center">
                           <div className="text-sm text-slate-400">Bonus</div>
                           {option.bonus > 0 ? (
-                            <div className="text-sm text-emerald-400">+{(option.bonus / 100).toFixed(2)}%</div>
+                            <div className="text-sm text-emerald-400">+{option.bonus.toFixed(2)}%</div>
                           ) : (
                             <div className="text-sm text-slate-500">+0.00%</div>
                           )}

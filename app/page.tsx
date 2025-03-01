@@ -134,6 +134,7 @@ export default function Home() {
       {
         title: '30 Day Lock',
         duration: 30,
+        durationDisplay: '30 days',
         apr: 1.20,
         bonus: 0,
         maxApr: 1.20,
@@ -142,26 +143,56 @@ export default function Home() {
       {
         title: '90 Day Lock',
         duration: 90,
+        durationDisplay: '90 days',
         apr: 3.50,
-        bonus: 0.80,
+        bonus: 8.00,
         maxApr: 3.50,
         stakeType: StakeType.FIXED_90_DAYS
       },
       {
         title: '180 Day Lock',
         duration: 180,
+        durationDisplay: '180 days',
         apr: 6.50,
-        bonus: 2.00,
+        bonus: 20.00,
         maxApr: 6.50,
         stakeType: StakeType.FIXED_180_DAYS
       },
       {
         title: '365 Day Lock',
         duration: 365,
+        durationDisplay: '365 days',
         apr: 12.00,
-        bonus: 4.00,
+        bonus: 40.00,
         maxApr: 12.00,
         stakeType: StakeType.FIXED_365_DAYS
+      },
+      {
+        title: '1 Minute Lock (Test)',
+        duration: 1/1440,  // 1 minute in days
+        durationDisplay: '1 minute',
+        apr: 15.00,
+        bonus: 50.00,
+        maxApr: 15.00,
+        stakeType: StakeType.FIXED_1_MINUTE
+      },
+      {
+        title: '3 Minutes Lock (Test)',
+        duration: 3/1440,  // 3 minutes in days
+        durationDisplay: '3 minutes',
+        apr: 17.50,
+        bonus: 75.00,
+        maxApr: 17.50,
+        stakeType: StakeType.FIXED_3_MINUTES
+      },
+      {
+        title: '5 Minutes Lock (Test)',
+        duration: 5/1440,  // 5 minutes in days
+        durationDisplay: '5 minutes',
+        apr: 20.00,
+        bonus: 100.00,
+        maxApr: 20.00,
+        stakeType: StakeType.FIXED_5_MINUTES
       },
     ];
 
@@ -179,6 +210,7 @@ export default function Home() {
         {
           title: '30 Day Lock',
           duration: 30,
+          durationDisplay: '30 days',
           apr: Number(stakingStats.currentAPRs[0] || BigInt(0)) / 100,
           bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[0] || BigInt(0)) / 100 : 0,
           maxApr: Number(stakingStats.maxPossibleAPRs[0] || BigInt(0)) / 100,
@@ -187,6 +219,7 @@ export default function Home() {
         {
           title: '90 Day Lock',
           duration: 90,
+          durationDisplay: '90 days',
           apr: Number(stakingStats.currentAPRs[1] || BigInt(0)) / 100,
           bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[1] || BigInt(0)) / 100 : 0,
           maxApr: Number(stakingStats.maxPossibleAPRs[1] || BigInt(0)) / 100,
@@ -195,6 +228,7 @@ export default function Home() {
         {
           title: '180 Day Lock',
           duration: 180,
+          durationDisplay: '180 days',
           apr: Number(stakingStats.currentAPRs[2] || BigInt(0)) / 100,
           bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[2] || BigInt(0)) / 100 : 0,
           maxApr: Number(stakingStats.maxPossibleAPRs[2] || BigInt(0)) / 100,
@@ -203,10 +237,39 @@ export default function Home() {
         {
           title: '365 Day Lock',
           duration: 365,
+          durationDisplay: '365 days',
           apr: Number(stakingStats.currentAPRs[3] || BigInt(0)) / 100,
           bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[3] || BigInt(0)) / 100 : 0,
           maxApr: Number(stakingStats.maxPossibleAPRs[3] || BigInt(0)) / 100,
           stakeType: StakeType.FIXED_365_DAYS
+        },
+        // 测试选项使用默认值，因为合约不返回这些数据
+        {
+          title: '1 Minute Lock (Test)',
+          duration: 1/1440,  // 1 minute in days
+          durationDisplay: '1 minute',
+          apr: 15.00, // 使用默认值
+          bonus: 50.00, // 使用默认值
+          maxApr: 15.00, // 使用默认值
+          stakeType: StakeType.FIXED_1_MINUTE
+        },
+        {
+          title: '3 Minutes Lock (Test)',
+          duration: 3/1440,  // 3 minutes in days
+          durationDisplay: '3 minutes',
+          apr: 17.50, // 使用默认值
+          bonus: 75.00, // 使用默认值
+          maxApr: 17.50, // 使用默认值
+          stakeType: StakeType.FIXED_3_MINUTES
+        },
+        {
+          title: '5 Minutes Lock (Test)',
+          duration: 5/1440,  // 5 minutes in days
+          durationDisplay: '5 minutes',
+          apr: 20.00, // 使用默认值
+          bonus: 100.00, // 使用默认值
+          maxApr: 20.00, // 使用默认值
+          stakeType: StakeType.FIXED_5_MINUTES
         },
       ];
     } catch (error) {
@@ -227,7 +290,9 @@ export default function Home() {
   // 未发布或应用未启用：显示倒计时
   if (!isLaunched || !isAppEnabled) {
     // 显示不同的消息，取决于是时间未到还是应用未启用
-    const message = "Launching on March 2, 2025 20:00 UTC+8"
+    const message = !isLaunched 
+      ? "Launching on March 3, 2024 20:00 UTC+8" 
+      : "Application is currently disabled by administrator";
     
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
@@ -379,7 +444,7 @@ export default function Home() {
         {/* Staking Options Section */}
         <div className="container mx-auto px-4 py-16 bg-slate-800/30">
           <h2 className="text-3xl font-light mb-10 text-center text-white">Staking Options</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-16">
             {stakingOptions.map((option, index) => (
               <div key={index} className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden hover:border-primary/30 transition-all">
                 <div className="p-6 border-b border-slate-700/50 text-center">
@@ -389,7 +454,7 @@ export default function Home() {
                 <div className="p-6 space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Duration</span>
-                    <span className="text-white font-medium">{option.duration} days</span>
+                    <span className="text-white font-medium">{option.durationDisplay}</span>
                   </div>
                   
                   <div className="flex justify-between items-center">

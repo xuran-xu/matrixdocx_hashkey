@@ -3,6 +3,9 @@ export enum StakeType {
     FIXED_90_DAYS = 1,
     FIXED_180_DAYS = 2,
     FIXED_365_DAYS = 3,
+    FIXED_1_MINUTE = 4,
+    FIXED_3_MINUTES = 5,
+    FIXED_5_MINUTES = 6,
   }
   
   export interface LockedStakeInfo {
