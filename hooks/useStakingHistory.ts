@@ -1,10 +1,10 @@
-// src/hooks/useStakingHistory.ts
 import { useQuery } from '@apollo/client';
 import { 
   GET_USER_STAKING_HISTORY, 
   StakingHistoryData, 
   StakingHistoryVars,
-  StakeEntity
+  StakeEntity,
+  TokenTransfer
 } from '@/graphql/queries';
 
 interface FormattedStake extends Omit<StakeEntity, 
@@ -33,7 +33,8 @@ interface StakingHistoryResult {
   activeStakes: FormattedStake[];
   lifetimeRewards: bigint;
   refetch: () => void;
-  allStakes: FormattedStake[]; // 添加所有质押的列表，包括活跃和已完成的
+  allStakes: FormattedStake[];
+  tokenTransfers: TokenTransfer[];
 }
 
 export function useStakingHistory(userAddress?: string): StakingHistoryResult {
@@ -49,10 +50,10 @@ export function useStakingHistory(userAddress?: string): StakingHistoryResult {
     }
   );
 
-  const stakingHistory = data?.userStats ? {
-    totalStaked: BigInt(data.userStats.totalStaked || '0'),
-    totalUnstaked: BigInt(data.userStats.totalUnstaked || '0'),
-    totalRewards: BigInt(data.userStats.totalRewards || '0')
+  const stakingHistory = data?.user ? {
+    totalStaked: BigInt(data.user.totalStaked || '0'),
+    totalUnstaked: BigInt(data.user.totalUnstaked || '0'),
+    totalRewards: BigInt(data.user.totalRewards || '0')
   } : null;
   
   const allFormattedStakes: FormattedStake[] = data?.stakes?.map(stake => ({
@@ -87,6 +88,7 @@ export function useStakingHistory(userAddress?: string): StakingHistoryResult {
     activeStakes,
     lifetimeRewards,
     refetch,
-    allStakes: allFormattedStakes
+    allStakes: allFormattedStakes,
+    tokenTransfers: data?.tokenTransfers || []
   };
 }

@@ -435,11 +435,11 @@ export default function PortfolioPage() {
         </div>
       </div>
 
-      <div className="mt-12 pt-12 border-t border-slate-700/50">
+      {/* <div className="mt-12 pt-12 border-t border-slate-700/50">
         <h2 className="text-4xl font-light text-white mb-6">Staking History</h2>
         <StakingHistory />
       </div>
-      
+       */}
       {/* 确认模态窗口 */}
       {showUnstakeModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">

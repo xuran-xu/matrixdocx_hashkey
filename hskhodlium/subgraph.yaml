@@ -8,9 +8,9 @@ dataSources:
     name: HashKeyChainStaking
     network: hashkeychain-sepolia
     source:
-      address: "0x972DfDcECdc34Cfb35939b5aC9759079ec664389"
+      address: "0xDbFF0dCE82E9e9D0BAda19Ef578227c5FB978253"
       abi: HashKeyChainStaking
-      startBlock: 8846538
+      startBlock: 8816600
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -32,8 +32,10 @@ dataSources:
         - Stake
         - StakingBonusUpdated
         - StakingContractUpgraded
+        - TokenTransfer
         - Unpaused
         - Unstake
+        - User
       abis:
         - name: HashKeyChainStaking
           file: ./abis/HashKeyChainStaking.json
@@ -66,12 +68,41 @@ dataSources:
           handler: handleRewardsClaimed
         - event: Stake(indexed address,uint256,uint256,uint8,uint256,uint256)
           handler: handleStake
+        - event: Unstake(indexed address,uint256,uint256,bool,uint256,uint256)
+          handler: handleUnstake
         - event: StakingBonusUpdated(uint8,uint256,uint256)
           handler: handleStakingBonusUpdated
         - event: StakingContractUpgraded(uint256)
           handler: handleStakingContractUpgraded
         - event: Unpaused(address)
           handler: handleUnpaused
-        - event: Unstake(indexed address,uint256,uint256,bool,uint256,uint256)
-          handler: handleUnstake
+
       file: ./src/hash-key-chain-staking.ts
+  - kind: ethereum
+    name: StHSK
+    network: hashkeychain-sepolia
+    source:
+      address: "0x81f4B01E26707Edbaf2168Ed4E20C17f8d28fd8F"
+      abi: StHSK
+      startBlock: 8809496
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Approval
+        - StHSKOwnershipTransferred
+        - Transfer
+        - TokenTransfer
+        - User
+      abis:
+        - name: StHSK
+          file: ./abis/StHSK.json
+      eventHandlers:
+      - event: Approval(indexed address,indexed address,uint256)
+        handler: handleApproval
+      - event: OwnershipTransferred(indexed address,indexed address)
+        handler: handleOwnershipTransferred
+      - event: Transfer(indexed address,indexed address,uint256)
+        handler: handleTransfer
+      file: ./src/st-hsk.ts

@@ -1,27 +1,74 @@
+type User @entity {
+  id: ID!
+  totalStaked: BigInt!
+  totalUnstaked: BigInt!
+  totalRewards: BigInt!
+  stakes: [Stake!]! @derivedFrom(field: "user")
+}
+
+type Stake @entity {
+  id: ID!
+  user: User!
+  hskAmount: BigInt! 
+  sharesAmount: BigInt! 
+  stakeType: Int! 
+  lockEndTime: BigInt! 
+  stakeId: BigInt! 
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+
+  # Additional fields
+  unstakeTransactionHash: Bytes
+  unstakeAmount: BigInt
+  isWithdrawn: Boolean!
+  isEarlyWithdrawal: Boolean
+  penalty: BigInt
+  stakedAt: BigInt!
+  unstakeAt: BigInt
+  currentHskValue: BigInt
+  profit: BigInt
+  
+  # New fields for locked stakes
+  isLocked: Boolean
+  isLockedUnstake: Boolean
+}
+
+type TokenTransfer @entity {
+  id: ID!
+  token: Bytes!
+  from: Bytes!
+  to: Bytes!
+  amount: BigInt!
+  transactionHash: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type EarlyWithdrawalPenaltyUpdated @entity {
+  id: ID!
+  stakeType: Int! 
+  oldValue: BigInt! 
+  newValue: BigInt! 
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type EmergencyWithdraw @entity {
+  id: ID!
+  user: Bytes! 
+  sharesAmount: BigInt! 
+  hskAmount: BigInt! 
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
 type AnnualBudgetUpdated @entity(immutable: true) {
-  id: Bytes!
+  id: ID!
   oldValue: BigInt! # uint256
   newValue: BigInt! # uint256
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type EarlyWithdrawalPenaltyUpdated @entity(immutable: true) {
-  id: Bytes!
-  stakeType: Int! # uint8
-  oldValue: BigInt! # uint256
-  newValue: BigInt! # uint256
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type EmergencyWithdraw @entity(immutable: true) {
-  id: Bytes!
-  user: Bytes! # address
-  sharesAmount: BigInt! # uint256
-  hskAmount: BigInt! # uint256
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -61,6 +108,29 @@ type InsufficientRewards @entity(immutable: true) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+}
+
+input StakeWhereInput {
+  user: Bytes
+  isWithdrawn: Boolean
+}
+
+input StakeOrderByInput {
+  stakedAt: OrderDirection
+}
+
+input TokenTransferWhereInput {
+  from: Bytes
+  to: Bytes
+}
+
+input TokenTransferOrderByInput {
+  blockTimestamp: OrderDirection
+}
+
+enum OrderDirection {
+  asc
+  desc
 }
 
 type MaxHskPerBlockUpdated @entity(immutable: true) {
@@ -116,19 +186,6 @@ type RewardsClaimed @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type Stake @entity(immutable: true) {
-  id: Bytes!
-  user: Bytes! # address
-  hskAmount: BigInt! # uint256
-  sharesAmount: BigInt! # uint256
-  stakeType: Int! # uint8
-  lockEndTime: BigInt! # uint256
-  stakeId: BigInt! # uint256
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
 type StakingBonusUpdated @entity(immutable: true) {
   id: Bytes!
   stakeType: Int! # uint8
@@ -163,6 +220,35 @@ type Unstake @entity(immutable: true) {
   isEarlyWithdrawal: Boolean! # bool
   penalty: BigInt! # uint256
   stakeId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Approval @entity(immutable: true) {
+  id: Bytes!
+  owner: Bytes! # address
+  spender: Bytes! # address
+  value: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type StHSKOwnershipTransferred @entity(immutable: true) {
+  id: Bytes!
+  previousOwner: Bytes! # address
+  newOwner: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Transfer @entity(immutable: true) {
+  id: Bytes!
+  from: Bytes! # address
+  to: Bytes! # address
+  value: BigInt! # uint256
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!

@@ -1,3 +1,4 @@
+import { Address, BigInt, log } from "@graphprotocol/graph-ts"
 import {
   AnnualBudgetUpdated as AnnualBudgetUpdatedEvent,
   EarlyWithdrawalPenaltyUpdated as EarlyWithdrawalPenaltyUpdatedEvent,
@@ -16,8 +17,13 @@ import {
   StakingBonusUpdated as StakingBonusUpdatedEvent,
   StakingContractUpgraded as StakingContractUpgradedEvent,
   Unpaused as UnpausedEvent,
-  Unstake as UnstakeEvent
+  Unstake as UnstakeEvent,
 } from "../generated/HashKeyChainStaking/HashKeyChainStaking"
+
+import {
+  Transfer as TransferEvent
+} from "../generated/StHSK/StHSK";
+
 import {
   AnnualBudgetUpdated,
   EarlyWithdrawalPenaltyUpdated,
@@ -35,15 +41,37 @@ import {
   Stake,
   StakingBonusUpdated,
   StakingContractUpgraded,
+  TokenTransfer,
   Unpaused,
-  Unstake
+  Unstake,
+  User
 } from "../generated/schema"
+
+export function getOrCreateUser(userAddress: Address): User {
+  let user = User.load(userAddress.toHexString())
+  if (!user) {
+    user = new User(userAddress.toHexString())
+    user.totalStaked = BigInt.zero()
+    user.totalUnstaked = BigInt.zero()
+    user.totalRewards = BigInt.zero()
+    user.save()
+  }
+  return user
+}
+
+// 添加日志记录，帮助调试
+function logEventProcessing(eventName: string, txHash: string, user: string): void {
+  log.info(
+    "处理 {} 事件: 交易哈希={}, 用户={}",
+    [eventName, txHash, user]
+  )
+}
 
 export function handleAnnualBudgetUpdated(
   event: AnnualBudgetUpdatedEvent
 ): void {
   let entity = new AnnualBudgetUpdated(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()).toHexString()
   )
   entity.oldValue = event.params.oldValue
   entity.newValue = event.params.newValue
@@ -59,7 +87,7 @@ export function handleEarlyWithdrawalPenaltyUpdated(
   event: EarlyWithdrawalPenaltyUpdatedEvent
 ): void {
   let entity = new EarlyWithdrawalPenaltyUpdated(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()).toHexString()
   )
   entity.stakeType = event.params.stakeType
   entity.oldValue = event.params.oldValue
@@ -74,7 +102,7 @@ export function handleEarlyWithdrawalPenaltyUpdated(
 
 export function handleEmergencyWithdraw(event: EmergencyWithdrawEvent): void {
   let entity = new EmergencyWithdraw(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()).toHexString()
   )
   entity.user = event.params.user
   entity.sharesAmount = event.params.sharesAmount
@@ -237,21 +265,46 @@ export function handleRewardsClaimed(event: RewardsClaimedEvent): void {
 }
 
 export function handleStake(event: StakeEvent): void {
-  let entity = new Stake(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+  logEventProcessing("Stake", event.transaction.hash.toHexString(), event.params.user.toHexString())
+  log.info(
+    "处理 Stake 事件: 交易哈希={}, 用户={}, 区块号={}, 金额={}, StakeID={}",
+    [
+      event.transaction.hash.toHexString(),
+      event.params.user.toHexString(),
+      event.block.number.toString(),
+      event.params.hskAmount.toString(),
+      event.params.stakeId.toString()
+    ]
   )
-  entity.user = event.params.user
-  entity.hskAmount = event.params.hskAmount
-  entity.sharesAmount = event.params.sharesAmount
-  entity.stakeType = event.params.stakeType
-  entity.lockEndTime = event.params.lockEndTime
-  entity.stakeId = event.params.stakeId
+  let user = getOrCreateUser(event.params.user)
+  
+  // Update user's totalStaked amount
+  user.totalStaked = user.totalStaked.plus(event.params.hskAmount)
+  user.save()
 
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  // Create a new stake entity with all required fields
+  let stake = new Stake(
+    event.params.stakeId.toString()
+  )
+  stake.user = user.id
+  stake.stakeId = event.params.stakeId
+  stake.hskAmount = event.params.hskAmount
+  stake.sharesAmount = event.params.sharesAmount
+  stake.stakeType = event.params.stakeType
+  stake.lockEndTime = event.params.lockEndTime
+  stake.blockNumber = event.block.number
+  stake.blockTimestamp = event.block.timestamp
+  stake.transactionHash = event.transaction.hash
+  stake.stakedAt = event.block.timestamp
+  stake.isWithdrawn = false
+  stake.currentHskValue = event.params.hskAmount // Initial value is the same as staked amount
+  
+  // Determine if this is a locked stake based on stakeType
+  // You may need to adjust this logic based on your contract's implementation
+  // Assuming stakeType > 0 means it's a locked stake
+  stake.isLocked = event.params.stakeType > 0
+  
+  stake.save()
 }
 
 export function handleStakingBonusUpdated(
@@ -300,19 +353,76 @@ export function handleUnpaused(event: UnpausedEvent): void {
 }
 
 export function handleUnstake(event: UnstakeEvent): void {
-  let entity = new Unstake(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+  logEventProcessing("Unstake", event.transaction.hash.toHexString(), event.params.user.toHexString())
+  
+  // Update the user's totalUnstaked amount
+  let user = getOrCreateUser(event.params.user)
+  user.totalUnstaked = user.totalUnstaked.plus(event.params.hskAmount)
+  
+  // Calculate any rewards
+  const reward = event.params.hskAmount.minus(event.params.penalty)
+  user.totalRewards = user.totalRewards.plus(reward)
+  user.save()
+
+  // 寻找对应的Stake记录
+  let stakeId = event.params.stakeId.toString()
+  // 我们需要检查所有该用户的Stake记录
+  let stakes = Stake.load(event.params.stakeId.toString())
+  
+  if (stakes) {
+    stakes.unstakeTransactionHash = event.transaction.hash
+    stakes.unstakeAmount = event.params.hskAmount
+    stakes.isWithdrawn = true
+    stakes.isEarlyWithdrawal = event.params.isEarlyWithdrawal
+    stakes.penalty = event.params.penalty
+    stakes.unstakeAt = event.block.timestamp
+    stakes.profit = event.params.hskAmount.minus(stakes.hskAmount)
+    stakes.save()
+  } else {
+    log.warning("找不到对应的Stake记录，无法更新解质押信息: txHash={}, stakeId={}", [
+      event.transaction.hash.toHexString(),
+      stakeId
+    ])
+    
+    // 创建一个新的记录，记录解质押信息
+    let unstakeRecord = new Stake(
+      event.transaction.hash.toHexString() + '-unstake-' + event.logIndex.toString()
+    )
+    unstakeRecord.user = user.id
+    unstakeRecord.stakeId = event.params.stakeId
+    unstakeRecord.hskAmount = BigInt.zero() // 原始质押金额未知
+    unstakeRecord.sharesAmount = event.params.sharesAmount
+    unstakeRecord.stakeType = 0 // 假设类型
+    unstakeRecord.lockEndTime = event.block.timestamp // 假设锁定期已结束
+    unstakeRecord.blockNumber = event.block.number
+    unstakeRecord.blockTimestamp = event.block.timestamp
+    unstakeRecord.transactionHash = event.transaction.hash
+    unstakeRecord.stakedAt = BigInt.zero() // 原始质押时间未知
+    unstakeRecord.isWithdrawn = true
+    unstakeRecord.unstakeTransactionHash = event.transaction.hash
+    unstakeRecord.unstakeAmount = event.params.hskAmount
+    unstakeRecord.isEarlyWithdrawal = event.params.isEarlyWithdrawal
+    unstakeRecord.penalty = event.params.penalty
+    unstakeRecord.unstakeAt = event.block.timestamp
+    
+    // Determine if this was a locked unstake based on the same criteria as stake
+    // This is a guess since we don't have the original stake
+    unstakeRecord.isLocked = event.params.isEarlyWithdrawal // Assuming early withdrawals are from locked stakes
+    
+    unstakeRecord.save()
+  }
+}
+
+export function handleTokenTransfer(event: TransferEvent): void {
+  let transfer = new TokenTransfer(
+    event.transaction.hash.concatI32(event.logIndex.toI32()).toHexString()
   )
-  entity.user = event.params.user
-  entity.sharesAmount = event.params.sharesAmount
-  entity.hskAmount = event.params.hskAmount
-  entity.isEarlyWithdrawal = event.params.isEarlyWithdrawal
-  entity.penalty = event.params.penalty
-  entity.stakeId = event.params.stakeId
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  transfer.token = event.address
+  transfer.from = event.params.from
+  transfer.to = event.params.to
+  transfer.amount = event.params.value
+  transfer.transactionHash = event.transaction.hash
+  transfer.blockNumber = event.block.number
+  transfer.blockTimestamp = event.block.timestamp
+  transfer.save()
 }

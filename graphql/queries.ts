@@ -1,28 +1,57 @@
-// src/graphql/queries.ts
 import { gql } from '@apollo/client';
 
-// 获取用户质押历史的查询 - 修改查询以匹配实际的subgraph schema
 export const GET_USER_STAKING_HISTORY = gql`
   query GetUserStakingHistory($userAddress: String!) {
-    stakes(where: { user: $userAddress }, orderBy: stakedAt, orderDirection: desc) {
+    stakes(
+      where: { user: $userAddress }, 
+      orderBy: stakedAt, 
+      orderDirection: desc
+    ) {
       id
+      transactionHash
       stakeId
-      user
-      sharesAmount
+      user {
+        id
+      }
       hskAmount
-      currentHskValue
-      lockEndTime
+      sharesAmount
       stakeType
-      isWithdrawn
+      lockEndTime
+      
+      unstakeTransactionHash
       unstakeAmount
-      profit
-      penalty
+      isWithdrawn
       isEarlyWithdrawal
+      penalty
+      
       stakedAt
       unstakeAt
+      
+      currentHskValue
+      profit
     }
-    userStats: userStat(id: $userAddress) {
+    
+    tokenTransfers(
+      where: { 
+        or: [
+          { from: $userAddress },
+          { to: $userAddress }
+        ]
+      }, 
+      orderBy: blockTimestamp, 
+      orderDirection: desc
+    ) {
       id
+      token
+      from
+      to
+      amount
+      transactionHash
+      blockNumber
+      blockTimestamp
+    }
+    
+    user(id: $userAddress) {
       totalStaked
       totalUnstaked
       totalRewards
@@ -30,27 +59,41 @@ export const GET_USER_STAKING_HISTORY = gql`
   }
 `;
 
-// 定义类型
-export interface StakeEntity {
+export interface TokenTransfer {
   id: string;
-  stakeId: string;
-  user: string;
-  sharesAmount: string;
-  hskAmount: string;
-  currentHskValue?: string;
-  lockEndTime: string;
-  stakeType: number;
-  isWithdrawn: boolean;
-  unstakeAmount?: string;
-  profit?: string;
-  penalty?: string;
-  isEarlyWithdrawal?: boolean;
-  stakedAt: string;
-  unstakeAt?: string;
+  token: string;
+  from: string;
+  to: string;
+  amount: string;
+  transactionHash: string;
+  blockNumber: string;
+  blockTimestamp: string;
 }
 
-export interface UserStat {
+export interface StakeEntity {
   id: string;
+  transactionHash: string;
+  stakeId: string;
+  user: { id: string };
+  hskAmount: string;
+  sharesAmount: string;
+  stakeType: number;
+  lockEndTime: string;
+  
+  unstakeTransactionHash?: string;
+  unstakeAmount?: string;
+  isWithdrawn: boolean;
+  isEarlyWithdrawal?: boolean;
+  penalty?: string;
+  
+  stakedAt: string;
+  unstakeAt?: string;
+  
+  currentHskValue?: string;
+  profit?: string;
+}
+
+export interface UserStats {
   totalStaked: string;
   totalUnstaked: string;
   totalRewards: string;
@@ -58,7 +101,8 @@ export interface UserStat {
 
 export interface StakingHistoryData {
   stakes: StakeEntity[];
-  userStats: UserStat | null;
+  tokenTransfers: TokenTransfer[];
+  user: UserStats;
 }
 
 export interface StakingHistoryVars {
