@@ -1,0 +1,77 @@
+specVersion: 1.2.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: HashKeyChainStaking
+    network: hashkeychain-sepolia
+    source:
+      address: "0x972DfDcECdc34Cfb35939b5aC9759079ec664389"
+      abi: HashKeyChainStaking
+      startBlock: 8843739
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - AnnualBudgetUpdated
+        - EarlyWithdrawalPenaltyUpdated
+        - EmergencyWithdraw
+        - ExchangeRateUpdated
+        - HskPerBlockUpdated
+        - Initialized
+        - InsufficientRewards
+        - MaxHskPerBlockUpdated
+        - MinStakeAmountUpdated
+        - OwnershipTransferred
+        - Paused
+        - RewardsAdded
+        - RewardsClaimed
+        - Stake
+        - StakingBonusUpdated
+        - StakingContractUpgraded
+        - Unpaused
+        - Unstake
+      abis:
+        - name: HashKeyChainStaking
+          file: ./abis/HashKeyChainStaking.json
+      eventHandlers:
+        - event: AnnualBudgetUpdated(uint256,uint256)
+          handler: handleAnnualBudgetUpdated
+        - event: EarlyWithdrawalPenaltyUpdated(uint8,uint256,uint256)
+          handler: handleEarlyWithdrawalPenaltyUpdated
+        - event: EmergencyWithdraw(indexed address,uint256,uint256)
+          handler: handleEmergencyWithdraw
+        - event: ExchangeRateUpdated(uint256,uint256,uint256)
+          handler: handleExchangeRateUpdated
+        - event: HskPerBlockUpdated(uint256,uint256)
+          handler: handleHskPerBlockUpdated
+        - event: Initialized(uint64)
+          handler: handleInitialized
+        - event: InsufficientRewards(uint256,uint256)
+          handler: handleInsufficientRewards
+        - event: MaxHskPerBlockUpdated(uint256,uint256)
+          handler: handleMaxHskPerBlockUpdated
+        - event: MinStakeAmountUpdated(uint256,uint256)
+          handler: handleMinStakeAmountUpdated
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: Paused(address)
+          handler: handlePaused
+        - event: RewardsAdded(uint256,indexed address)
+          handler: handleRewardsAdded
+        - event: RewardsClaimed(indexed address,uint256)
+          handler: handleRewardsClaimed
+        - event: Stake(indexed address,uint256,uint256,uint8,uint256,uint256)
+          handler: handleStake
+        - event: StakingBonusUpdated(uint8,uint256,uint256)
+          handler: handleStakingBonusUpdated
+        - event: StakingContractUpgraded(uint256)
+          handler: handleStakingContractUpgraded
+        - event: Unpaused(address)
+          handler: handleUnpaused
+        - event: Unstake(indexed address,uint256,uint256,bool,uint256,uint256)
+          handler: handleUnstake
+      file: ./src/hash-key-chain-staking.ts

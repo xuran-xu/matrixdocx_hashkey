@@ -8,9 +8,7 @@ import { formatBigInt } from '@/utils/format';
 import { useUnstakeLocked, useUserStakingInfo, batchGetStakingInfo } from '@/hooks/useStakingContracts';
 import { getContractAddresses } from '@/config/contracts';
 import { toast } from 'react-toastify';
-import { HashKeyChainStakingABI } from '@/constants/abi';
-import { StHSKABI } from '@/constants/abi';
-import { fetchUnstakingHistory } from '@/utils/fetchStakesRecord';
+import StakingHistory from '@/components/StakingHistory';
 
 export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
@@ -435,6 +433,11 @@ export default function PortfolioPage() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="mt-12 pt-12 border-t border-slate-700/50">
+        <h2 className="text-4xl font-light text-white mb-6">Staking History</h2>
+        <StakingHistory />
       </div>
       
       {/* 确认模态窗口 */}
