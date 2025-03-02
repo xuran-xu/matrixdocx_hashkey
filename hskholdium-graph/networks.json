@@ -1,0 +1,8 @@
+{
+  "hashkeychain-sepolia": {
+    "TransparentUpgradeableProxy": {
+      "address": "0xDbFF0dCE82E9e9D0BAda19Ef578227c5FB978253",
+      "startBlock": 8843739
+    }
+  }
+}
