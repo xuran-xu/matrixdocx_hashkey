@@ -2,7 +2,7 @@
   "hashkeychain-sepolia": {
     "HashKeyChainStaking": {
       "address": "0x972DfDcECdc34Cfb35939b5aC9759079ec664389",
-      "startBlock": 8843739
+      "startBlock": 8846538
     }
   }
 }
