@@ -9,6 +9,13 @@ import { useState, useEffect } from 'react';
 import { waitForTransactionReceipt, writeContract } from 'wagmi/actions';
 import { config } from '@/app/providers';
 
+export const stakeTypeMap = {
+  "30days": 0,  // FIXED_30_DAYS
+  "90days": 1,  // FIXED_90_DAYS
+  "180days": 2, // FIXED_180_DAYS
+  "365days": 3  // FIXED_365_DAYS
+};
+
 // 获取质押合约的基本信息
 export function useStakingInfo(simulatedAmount: string = '1000') {
   const chainId = useChainId();
@@ -191,10 +198,7 @@ export function useStakeLocked() {
         functionName: 'stakeLocked',
         args: [stakeType],
         value: amountWei,
-      });
-      
-      console.log('Transaction submitted:', tx);
-      
+      });      
       // 等待交易确认
       setIsConfirming(true);
       const receipt = await waitForTransactionReceipt(config, {
@@ -396,4 +400,70 @@ export async function batchGetStakingInfo(contractAddress: string, publicClient:
   }
   
   return results;
+}
+
+// 获取所有质押APR数据
+export function useAllStakingAPRs(stakeAmount: string = '1000') {
+  const chainId = useChainId();
+  const contractAddress = getContractAddresses(chainId).stakingContract;
+  const publicClient = usePublicClient();
+  const stakeAmountWei = parseEther(stakeAmount || '0');
+  
+  const [data, setData] = useState<{
+    estimatedAPRs: bigint[] | null;
+    maxAPRs: bigint[] | null;
+    isLoading: boolean;
+    error: Error | null;
+  }>({
+    estimatedAPRs: null,
+    maxAPRs: null,
+    isLoading: true,
+    error: null
+  });
+  
+  useEffect(() => {
+    const fetchAPRs = async () => {
+      if (!publicClient || !contractAddress) return;
+      
+      setData(prev => ({ ...prev, isLoading: true, error: null }));
+      
+      try {
+        console.log('Fetching APRs with amount:', stakeAmountWei.toString());
+        
+        // 调用getAllStakingAPRs方法获取APR数据
+        const result = await publicClient.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: HashKeyChainStakingABI,
+          functionName: 'getAllStakingAPRs',
+          args: [stakeAmountWei]
+        });
+        
+        const [estimatedAPRs, maxAPRs] = result as [bigint[], bigint[]];
+        
+        console.log('APRs fetched successfully:', {
+          estimatedAPRs: estimatedAPRs.map(apr => apr.toString()),
+          maxAPRs: maxAPRs.map(apr => apr.toString())
+        });
+        
+        setData({
+          estimatedAPRs,
+          maxAPRs,
+          isLoading: false,
+          error: null
+        });
+      } catch (error) {
+        console.error('Failed to fetch APRs:', error);
+        setData({
+          estimatedAPRs: null,
+          maxAPRs: null,
+          isLoading: false,
+          error: error instanceof Error ? error : new Error('Failed to fetch APRs')
+        });
+      }
+    };
+    
+    fetchAPRs();
+  }, [publicClient, contractAddress, stakeAmountWei]);
+  
+  return data;
 }

@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import MainLayout from '../main-layout';
-import { useAccount, useChainId, usePublicClient, useBlockNumber } from 'wagmi';
+import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { LockedStakeInfo } from '@/types/contracts';
 import { formatBigInt } from '@/utils/format';
-import { useUnstakeLocked, useUserStakingInfo, batchGetStakingInfo } from '@/hooks/useStakingContracts';
+import { useUnstakeLocked, useUserStakingInfo, batchGetStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { getContractAddresses } from '@/config/contracts';
 import { toast } from 'react-toastify';
-import StakingHistory from '@/components/StakingHistory';
+// import StakingHistory from '@/components/StakingHistory';
 
 export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
@@ -22,10 +22,21 @@ export default function PortfolioPage() {
   const contractAddress = getContractAddresses(chainId).stakingContract;
   const publicClient = usePublicClient();
   const [totalRewards, setTotalRewards] = useState<bigint>(BigInt(0));
+  const { estimatedAPRs, isLoading: aprsLoading } = useAllStakingAPRs();
+  const [aprDataSource, setAprDataSource] = useState<'contract' | 'loading'>('loading');
   
   // 添加modal状态
   const [showUnstakeModal, setShowUnstakeModal] = useState(false);
   const [unstakingPosition, setUnstakingPosition] = useState<number | null>(null);
+  
+  // 处理APR数据 - 使用useEffect避免无限循环
+  useEffect(() => {
+    if (!aprsLoading && estimatedAPRs) {
+      setAprDataSource('contract');
+    } else {
+      setAprDataSource('loading');
+    }
+  }, [aprsLoading, estimatedAPRs]);
   
   // 加载用户所有锁定质押
   const fetchStakedPositions = useCallback(async () => {
@@ -34,16 +45,20 @@ export default function PortfolioPage() {
     setIsLoadingPositions(true);
     
     try {
+      // 创建质押ID数组
       const stakeIds = Array.from({ length: Number(lockedStakeCount) }, (_, i) => i);
-      const stakesInfo = await batchGetStakingInfo(contractAddress, publicClient, stakeIds, address);      
-      // 计算确认的总收益（仅供参考）
+      
+      // 批量获取所有质押信息
+      const stakesInfo = await batchGetStakingInfo(contractAddress, publicClient, stakeIds, address);
+      
+      // 计算总确认收益仅供参考
       const confirmedTotalReward = stakesInfo
         .filter(info => !info.error && !info.isWithdrawn)
         .reduce((sum, info) => sum + (info.currentHskValue - info.hskAmount), BigInt(0));
       
       setTotalRewards(confirmedTotalReward);
       
-      // 转换为所需格式 - 包括所有位置，包括已提取的
+      // 转换为所需格式 - 包括所有质押，包括已提取的
       const positions = stakesInfo
         .filter(info => !info.error)
         .map(info => ({
@@ -72,6 +87,13 @@ export default function PortfolioPage() {
   // 初始加载数据
   useEffect(() => {
     fetchStakedPositions();
+    
+    // 定期刷新数据
+    const intervalId = setInterval(() => {
+      fetchStakedPositions();
+    }, 300000); // 每5分钟刷新一次
+    
+    return () => clearInterval(intervalId);
   }, [fetchStakedPositions]);
   
   // Modal处理 - 打开确认对话框
@@ -151,36 +173,35 @@ export default function PortfolioPage() {
     }
   };
   
-  // 获取质押期APR值
-  const getAPRForStakePeriod = (lockEndTime: bigint) => {
+  // 获取质押期APR值 - 使用useMemo避免重复计算
+  const getAPRForStakePeriod = useCallback((lockEndTime: bigint) => {
+    if (!estimatedAPRs || aprsLoading) {
+      return 'Loading...';
+    }
+    
     const now = Math.floor(Date.now() / 1000);
     const remainingTime = Number(lockEndTime) - now;
     
+    // 将合约返回的APR值除以100转换为百分比
+    const apr30 = Number(estimatedAPRs[0] || BigInt(0)) / 100;
+    const apr90 = Number(estimatedAPRs[1] || BigInt(0)) / 100;
+    const apr180 = Number(estimatedAPRs[2] || BigInt(0)) / 100;
+    const apr365 = Number(estimatedAPRs[3] || BigInt(0)) / 100;
+    
     if (remainingTime <= 0) {
-      return '1.2%'; // 已解锁的质押
-    } else if (remainingTime <= 60) {
-      return '15%'; // 1分钟测试选项
-    } else if (remainingTime <= 3 * 60) {
-      return '17.5%'; // 3分钟测试选项
-    } else if (remainingTime <= 5 * 60) {
-      return '20%'; // 5分钟测试选项
+      return `${apr30.toFixed(2)}%`; // 已解锁的质押
     } else if (remainingTime <= 30 * 24 * 3600) {
-      return '1.2%'; // 30天锁定
+      return `${apr30.toFixed(2)}%`; // 30天锁定
     } else if (remainingTime <= 90 * 24 * 3600) {
-      return '3.5%'; // 90天锁定
+      return `${apr90.toFixed(2)}%`; // 90天锁定
     } else if (remainingTime <= 180 * 24 * 3600) {
-      return '6.5%'; // 180天锁定
+      return `${apr180.toFixed(2)}%`; // 180天锁定
     } else {
-      return '12.0%'; // 365天锁定
+      return `${apr365.toFixed(2)}%`; // 365天锁定
     }
-  };
+  }, [estimatedAPRs, aprsLoading]);
   
-  // 判断是否为测试选项
-  const isTestStakingOption = (lockEndTime: bigint) => {
-    const now = Math.floor(Date.now() / 1000);
-    const remainingTime = Number(lockEndTime) - now;
-    return remainingTime > 0 && remainingTime <= 5 * 60;
-  };
+
 
   return (
     <MainLayout>
@@ -211,6 +232,18 @@ export default function PortfolioPage() {
                   </>
                 )}
               </button>
+            </div>
+            
+            {/* Add data source indicator */}
+            <div className="mb-4 text-sm">
+              <span className="text-slate-400">
+                APR Data Source: {' '}
+                {aprDataSource === 'contract' ? (
+                  <span className="text-green-500">Contract (Live Data)</span>
+                ) : (
+                  <span className="text-yellow-500">Loading...</span>
+                )}
+              </span>
             </div>
             
             {lastUpdateTime && (
@@ -333,26 +366,9 @@ export default function PortfolioPage() {
                       
                       <div className="w-full sm:w-auto mb-4 sm:mb-0">
                         <p className="text-sm text-slate-400 mb-1">APY</p>
-                        {(() => {
-                          const isTestOption = isTestStakingOption(position.info.lockEndTime);
-                          
-                          return (
-                            <div>
-                              <p className={`text-xl font-medium ${isTestOption ? 'text-blue-500' : 'text-green-500'}`}>
-                                {getAPRForStakePeriod(position.info.lockEndTime)}
-                              </p>
-                              {isTestOption && (
-                                <span className="inline-block px-2 py-0.5 text-xs bg-blue-500/30 text-blue-300 rounded-full mt-1">
-                                  {Number(position.info.lockEndTime) - Math.floor(Date.now() / 1000) <= 60 
-                                    ? '1 Min' 
-                                    : Number(position.info.lockEndTime) - Math.floor(Date.now() / 1000) <= 3 * 60 
-                                      ? '3 Min' 
-                                      : '5 Min'} Test Option
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })()}
+                        <p className="text-xl font-medium text-green-500">
+                          {getAPRForStakePeriod(position.info.lockEndTime)}
+                        </p>
                       </div>
                       
                       <div className="w-full sm:w-auto">
@@ -365,21 +381,6 @@ export default function PortfolioPage() {
                             new Date(Number(position.info.lockEndTime) * 1000).toLocaleDateString()
                           }
                         </p>
-                      </div>
-                    </div>
-                    
-                    {/* 累积收益显示 */}
-                    <div className="bg-green-900/20 border border-green-800/30 rounded-lg p-3 mb-4">
-                      <div className="flex items-center">
-                        <svg className="w-5 h-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div>
-                          <p className="text-sm text-green-400">Current Profit</p>
-                          <p className="text-lg font-medium text-green-500">
-                            +{formatBigInt(position.info.currentHskValue - position.info.hskAmount)} HSK
-                          </p>
-                        </div>
                       </div>
                     </div>
                     
