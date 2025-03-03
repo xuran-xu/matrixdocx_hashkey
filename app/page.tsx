@@ -30,8 +30,8 @@ export default function Home() {
   // 结合API加载状态和初始加载状态
   const isLoadingCombined = initialLoading || apiLoading || aprsLoading;
   
-  // Beijing launch time - March 2, 2025 20:00:00
-  const launchTime = new Date('2024-03-03T20:00:00+08:00').getTime();
+  // Beijing launch time - March 3, 2025 20:00:00
+  const launchTime = new Date('2025-03-03T20:00:00+08:00').getTime();
 
   // 检查环境变量
   useEffect(() => {
@@ -257,7 +257,7 @@ export default function Home() {
   if (!isLaunched || !isAppEnabled) {
     // 显示不同的消息，取决于是时间未到还是应用未启用
     const message = !isLaunched 
-      ? "Launching on March 3, 2024 20:00 UTC+8" 
+      ? "Launching on March 3, 2025 20:00 UTC+8" 
       : "Application is currently disabled by administrator";
     
     return (
