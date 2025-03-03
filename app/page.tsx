@@ -257,7 +257,6 @@ export default function Home() {
   if (!isLaunched || !isAppEnabled) {
     // 显示不同的消息，取决于是时间未到还是应用未启用
     const message = "Launching on March 3, 2025 20:00 UTC+8"
-    
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
         <div className="container mx-auto px-4 py-8 max-w-4xl text-center">
