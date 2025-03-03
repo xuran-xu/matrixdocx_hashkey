@@ -6,7 +6,7 @@ import { StakeType } from '@/types/contracts';
 import { formatBigInt } from '@/utils/format';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
-import { useStakingInfo } from '@/hooks/useStakingContracts';
+import { useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Image from 'next/image';
@@ -18,17 +18,19 @@ export default function Home() {
   const [debouncedAmount, setDebouncedAmount] = useState(simulatedAmount);
   const { address: _address, isConnected } = useAccount();
   const { totalStaked, stakingStats, exchangeRate, isLoading: apiLoading } = useStakingInfo(debouncedAmount);
+  const { estimatedAPRs, maxAPRs, isLoading: aprsLoading } = useAllStakingAPRs(debouncedAmount);
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [serverTime, setServerTime] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLaunched, setIsLaunched] = useState(false);
   const [isAppEnabled, setIsAppEnabled] = useState(false);
+  const [aprDataSource, setAprDataSource] = useState<'contract' | 'loading'>('loading');
   
   // 结合API加载状态和初始加载状态
-  const isLoadingCombined = initialLoading || apiLoading;
+  const isLoadingCombined = initialLoading || apiLoading || aprsLoading;
   
-  // Beijing launch time - March 2, 2025 20:00:00
+  // Beijing launch time - March 3, 2025 20:00:00
   const launchTime = new Date('2025-03-03T20:00:00+08:00').getTime();
 
   // 检查环境变量
@@ -127,93 +129,120 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [simulatedAmount]);
   
+  // Update APR data source when loading state changes
+  useEffect(() => {
+    if (!aprsLoading && estimatedAPRs && maxAPRs) {
+      setAprDataSource('contract');
+    } else {
+      setAprDataSource('loading');
+    }
+  }, [aprsLoading, estimatedAPRs, maxAPRs]);
+  
   // Extract APR and reward information from contract data
   const stakingOptions = React.useMemo(() => {
-    // Default options when contract data is not available
-    const defaultOptions = [
-      {
-        title: '30 Day Lock',
-        duration: 30,
-        apr: 1.20,
-        bonus: 0,
-        maxApr: 1.20,
-        stakeType: StakeType.FIXED_30_DAYS
-      },
-      {
-        title: '90 Day Lock',
-        duration: 90,
-        apr: 3.50,
-        bonus: 0.80,
-        maxApr: 3.50,
-        stakeType: StakeType.FIXED_90_DAYS
-      },
-      {
-        title: '180 Day Lock',
-        duration: 180,
-        apr: 6.50,
-        bonus: 2.00,
-        maxApr: 6.50,
-        stakeType: StakeType.FIXED_180_DAYS
-      },
-      {
-        title: '365 Day Lock',
-        duration: 365,
-        apr: 12.00,
-        bonus: 4.00,
-        maxApr: 12.00,
-        stakeType: StakeType.FIXED_365_DAYS
-      },
-    ];
-
-    // If no contract data, return default options
-    if (!stakingStats || !stakingStats.currentAPRs || !stakingStats.maxPossibleAPRs) {
-      console.log('Using default staking options');
-      return defaultOptions;
+    // If data is still loading, return empty array
+    if (aprsLoading || !estimatedAPRs || !maxAPRs) {
+      console.log('APR data is still loading');
+      setAprDataSource('loading');
+      return [];
     }
     
     try {
-      console.log('Calculating staking options from contract data:', stakingStats);
+      console.log('Contract APR data available:', {
+        estimatedAPRs: estimatedAPRs.map(apr => apr.toString()),
+        maxAPRs: maxAPRs.map(apr => apr.toString())
+      });
+      
+      setAprDataSource('contract');
+      
+      // Calculate formatted APR values
+      const apr30 = Number(estimatedAPRs[0] || BigInt(0)) / 100;
+      const apr90 = Number(estimatedAPRs[1] || BigInt(0)) / 100;
+      const apr180 = Number(estimatedAPRs[2] || BigInt(0)) / 100;
+      const apr365 = Number(estimatedAPRs[3] || BigInt(0)) / 100;
+      
+      const maxApr30 = Number(maxAPRs[0] || BigInt(0)) / 100;
+      const maxApr90 = Number(maxAPRs[1] || BigInt(0)) / 100;
+      const maxApr180 = Number(maxAPRs[2] || BigInt(0)) / 100;
+      const maxApr365 = Number(maxAPRs[3] || BigInt(0)) / 100;
+      
+      // 硬编码的bonus值，按照图片中显示的数值
+      const bonus30 = 0.00;  // 30天锁定期：+0.00%
+      const bonus90 = 0.80;  // 90天锁定期：+0.80%
+      const bonus180 = 2.00; // 180天锁定期：+2.00%
+      const bonus365 = 4.00; // 365天锁定期：+4.00%
+      
+      console.log('Using hardcoded bonus values:', {
+        '30 days': bonus30.toFixed(2) + '%',
+        '90 days': bonus90.toFixed(2) + '%',
+        '180 days': bonus180.toFixed(2) + '%',
+        '365 days': bonus365.toFixed(2) + '%'
+      });
+      
+      console.log('Contract APR values (formatted):', {
+        '30 days': {
+          estimated: apr30.toFixed(2) + '%',
+          max: maxApr30.toFixed(2) + '%'
+        },
+        '90 days': {
+          estimated: apr90.toFixed(2) + '%',
+          max: maxApr90.toFixed(2) + '%'
+        },
+        '180 days': {
+          estimated: apr180.toFixed(2) + '%',
+          max: maxApr180.toFixed(2) + '%'
+        },
+        '365 days': {
+          estimated: apr365.toFixed(2) + '%',
+          max: maxApr365.toFixed(2) + '%'
+        }
+      });
       
       // Extract data and calculate
       return [
         {
           title: '30 Day Lock',
           duration: 30,
-          apr: Number(stakingStats.currentAPRs[0] || BigInt(0)) / 100,
-          bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[0] || BigInt(0)) / 100 : 0,
-          maxApr: Number(stakingStats.maxPossibleAPRs[0] || BigInt(0)) / 100,
+          durationDisplay: '30 days',
+          apr: apr30,
+          bonus: bonus30,
+          maxApr: maxApr30,
           stakeType: StakeType.FIXED_30_DAYS
         },
         {
           title: '90 Day Lock',
           duration: 90,
-          apr: Number(stakingStats.currentAPRs[1] || BigInt(0)) / 100,
-          bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[1] || BigInt(0)) / 100 : 0,
-          maxApr: Number(stakingStats.maxPossibleAPRs[1] || BigInt(0)) / 100,
+          durationDisplay: '90 days',
+          apr: apr90,
+          bonus: bonus90,
+          maxApr: maxApr90,
           stakeType: StakeType.FIXED_90_DAYS
         },
         {
           title: '180 Day Lock',
           duration: 180,
-          apr: Number(stakingStats.currentAPRs[2] || BigInt(0)) / 100,
-          bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[2] || BigInt(0)) / 100 : 0,
-          maxApr: Number(stakingStats.maxPossibleAPRs[2] || BigInt(0)) / 100,
+          durationDisplay: '180 days',
+          apr: apr180,
+          bonus: bonus180,
+          maxApr: maxApr180,
           stakeType: StakeType.FIXED_180_DAYS
         },
         {
           title: '365 Day Lock',
           duration: 365,
-          apr: Number(stakingStats.currentAPRs[3] || BigInt(0)) / 100,
-          bonus: stakingStats.baseBonus ? Number(stakingStats.baseBonus[3] || BigInt(0)) / 100 : 0,
-          maxApr: Number(stakingStats.maxPossibleAPRs[3] || BigInt(0)) / 100,
+          durationDisplay: '365 days',
+          apr: apr365,
+          bonus: bonus365,
+          maxApr: maxApr365,
           stakeType: StakeType.FIXED_365_DAYS
-        },
+        }
       ];
     } catch (error) {
-      console.error('Error processing staking stats:', error);
-      return defaultOptions; // Return default options on error
+      console.error('Error processing APR data:', error);
+      setAprDataSource('loading');
+      return []; // Return empty array on error
     }
-  }, [stakingStats]);
+  }, [estimatedAPRs, maxAPRs, aprsLoading]);
   
   // 显示加载状态
   if (isLoading) {
@@ -272,6 +301,22 @@ export default function Home() {
       </div>
     );
   }
+  
+  // 在首页的合适位置添加数据来源指示器
+  const renderDataSourceIndicator = () => {
+    return (
+      <div className="mb-4 text-sm">
+        <span className="text-slate-400">
+          APR Data Source: {' '}
+          {aprDataSource === 'contract' ? (
+            <span className="text-green-500">Contract (Live Data)</span>
+          ) : (
+            <span className="text-yellow-500">Loading...</span>
+          )}
+        </span>
+      </div>
+    );
+  };
   
   // 已发布且应用已启用：显示主内容
   return (
@@ -379,7 +424,10 @@ export default function Home() {
         {/* Staking Options Section */}
         <div className="container mx-auto px-4 py-16 bg-slate-800/30">
           <h2 className="text-3xl font-light mb-10 text-center text-white">Staking Options</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="flex justify-center mb-8">
+            {renderDataSourceIndicator()}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-16">
             {stakingOptions.map((option, index) => (
               <div key={index} className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden hover:border-primary/30 transition-all">
                 <div className="p-6 border-b border-slate-700/50 text-center">
@@ -389,7 +437,7 @@ export default function Home() {
                 <div className="p-6 space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Duration</span>
-                    <span className="text-white font-medium">{option.duration} days</span>
+                    <span className="text-white font-medium">{option.durationDisplay}</span>
                   </div>
                   
                   <div className="flex justify-between items-center">

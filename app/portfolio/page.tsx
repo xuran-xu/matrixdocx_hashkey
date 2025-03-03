@@ -1,276 +1,64 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import MainLayout from '../main-layout';
-import { useAccount, useChainId, usePublicClient, useBlockNumber } from 'wagmi';
+import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { LockedStakeInfo } from '@/types/contracts';
 import { formatBigInt } from '@/utils/format';
-import { useUnstakeLocked, useUserStakingInfo, batchGetStakingInfo } from '@/hooks/useStakingContracts';
+import { useUnstakeLocked, useUserStakingInfo, batchGetStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { getContractAddresses } from '@/config/contracts';
 import { toast } from 'react-toastify';
-import { HashKeyChainStakingABI } from '@/constants/abi';
-import { StHSKABI } from '@/constants/abi';
+// import StakingHistory from '@/components/StakingHistory';
 
 export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
   const { lockedStakeCount, activeLockedStakes, isLoading: loadingInfo } = useUserStakingInfo();
   const { unstakeLocked, isPending: unstakePending, isConfirming: unstakeConfirming } = useUnstakeLocked();
-  const [stakedPositions, setStakedPositions] = useState<Array<{ id: number, info: LockedStakeInfo, estimatedProfit?: bigint, pendingReward?: bigint }>>([]);
+  const [stakedPositions, setStakedPositions] = useState<Array<{ id: number, info: LockedStakeInfo }>>([]);
   const [isLoadingPositions, setIsLoadingPositions] = useState(false);
   const [processingStakeId, setProcessingStakeId] = useState<number | null>(null);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
-  const [isEstimating, setIsEstimating] = useState(false);
   const chainId = useChainId();
   const contractAddress = getContractAddresses(chainId).stakingContract;
   const publicClient = usePublicClient();
   const [totalRewards, setTotalRewards] = useState<bigint>(BigInt(0));
-  const [estimatedTotalRewards, setEstimatedTotalRewards] = useState<bigint>(BigInt(0));
+  const { estimatedAPRs, isLoading: aprsLoading } = useAllStakingAPRs();
+  const [aprDataSource, setAprDataSource] = useState<'contract' | 'loading'>('loading');
   
-  // Get the current block number (automatically updates)
-  const { data: currentBlockNumber } = useBlockNumber({ watch: true });
+  // 添加modal状态
+  const [showUnstakeModal, setShowUnstakeModal] = useState(false);
+  const [unstakingPosition, setUnstakingPosition] = useState<number | null>(null);
   
-  // Add refs to prevent infinite update loops
-  const stakedPositionsRef = useRef(stakedPositions);
+  // 处理APR数据 - 使用useEffect避免无限循环
   useEffect(() => {
-    stakedPositionsRef.current = stakedPositions;
-  }, [stakedPositions]);
-  
-  const lastProcessedBlock = useRef<bigint | null>(null);
-  
-  // Track contract data for reward estimation
-  const [rewardParams, setRewardParams] = useState({
-    lastRewardBlock: BigInt(0),
-    hskPerBlock: BigInt(0),
-    totalPooledHSK: BigInt(0),
-    totalShares: BigInt(0),
-    exchangeRate: BigInt(0)
-  });
-  
-  // Fetch contract reward parameters
-  const fetchRewardParams = useCallback(async () => {
-    if (!publicClient || !contractAddress) return;
-    
-    try {
-      // Get stHSK contract address
-      const stHSKAddress = await publicClient.readContract({
-        address: contractAddress as `0x${string}`,
-        abi: HashKeyChainStakingABI,
-        functionName: 'stHSK',
-      }) as `0x${string}`;
-      
-      // Fetch all required parameters in parallel
-      const [lastRewardBlock, hskPerBlock, totalPooledHSK, totalShares, exchangeRate] = await Promise.all([
-        publicClient.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: HashKeyChainStakingABI,
-          functionName: 'lastRewardBlock',
-        }) as Promise<bigint>,
-        publicClient.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: HashKeyChainStakingABI,
-          functionName: 'hskPerBlock',
-        }) as Promise<bigint>,
-        publicClient.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: HashKeyChainStakingABI,
-          functionName: 'totalPooledHSK',
-        }) as Promise<bigint>,
-        publicClient.readContract({
-          address: stHSKAddress,
-          abi: StHSKABI,
-          functionName: 'totalSupply',
-        }) as Promise<bigint>,
-        publicClient.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: HashKeyChainStakingABI,
-          functionName: 'getCurrentExchangeRate',
-        }) as Promise<bigint>
-      ]) as [bigint, bigint, bigint, bigint, bigint];
-      
-      setRewardParams({
-        lastRewardBlock: lastRewardBlock,
-        hskPerBlock: hskPerBlock,
-        totalPooledHSK: totalPooledHSK,
-        totalShares: totalShares,
-        exchangeRate: exchangeRate
-      });
-      
-      console.log('Reward params updated:', {
-        lastRewardBlock: lastRewardBlock.toString(),
-        hskPerBlock: hskPerBlock.toString(),
-        totalPooledHSK: totalPooledHSK.toString(),
-        totalShares: totalShares.toString(),
-        exchangeRate: exchangeRate.toString()
-      });
-    } catch (error) {
-      console.error('Failed to fetch reward parameters:', error);
+    if (!aprsLoading && estimatedAPRs) {
+      setAprDataSource('contract');
+    } else {
+      setAprDataSource('loading');
     }
-  }, [publicClient, contractAddress]);
+  }, [aprsLoading, estimatedAPRs]);
   
-  const calculateEstimatedRewards = useCallback(() => {
-    if (!currentBlockNumber || !stakedPositionsRef.current.length || 
-        rewardParams.totalShares === BigInt(0)) {
-      return;
-    }
-    
-    // Don't process the same block multiple times
-    if (lastProcessedBlock.current === currentBlockNumber) {
-      return;
-    }
-    
-    setIsEstimating(true);
-    lastProcessedBlock.current = currentBlockNumber;
-    
-    try {
-      // Calculate blocks since the last reward update
-      const blockDiff = BigInt(currentBlockNumber) - rewardParams.lastRewardBlock;
-      
-      if (blockDiff <= BigInt(0)) {
-        setIsEstimating(false);
-        return;
-      }
-      
-      console.log(`Estimating rewards for ${blockDiff} blocks since last update`);
-      
-      // Constants definition
-      const SECONDS_PER_BLOCK = BigInt(2);  // Average seconds per block (2 sec)
-      const SECONDS_PER_YEAR = BigInt(365 * 24 * 3600);  // Seconds in a year
-      const BLOCKS_PER_YEAR = SECONDS_PER_YEAR / SECONDS_PER_BLOCK;  // Blocks per year
-      const BASIS_POINTS = BigInt(10000);  // Basis points (100% = 10000)
-      const MAX_APR = BigInt(3000);  // Global max APR (30%)
-      
-      // Estimate new total rewards, apply global APR limit
-      let estimatedNewRewards = blockDiff * rewardParams.hskPerBlock;
-      
-      // Check if above MAX_APR (global limit)
-      const annualReward = rewardParams.hskPerBlock * BLOCKS_PER_YEAR;
-      const currentGlobalAPR = rewardParams.totalPooledHSK > BigInt(0) ? 
-        (annualReward * BASIS_POINTS) / rewardParams.totalPooledHSK : MAX_APR;
-      
-      if (currentGlobalAPR > MAX_APR) {
-        estimatedNewRewards = (rewardParams.totalPooledHSK * MAX_APR * blockDiff) / 
-                             (BASIS_POINTS * BLOCKS_PER_YEAR);
-        console.log(`APR limit applied: ${estimatedNewRewards} (global APR: ${currentGlobalAPR / BigInt(100)}%)`);
-      }
-      
-      // Update each position's estimated rewards - apply APR limits
-      const updatedPositions = stakedPositionsRef.current.map(position => {
-        // Skip withdrawn stakes
-        if (position.info.isWithdrawn) return position;
-        
-        // Determine max APR for this stake (based on lock period)
-        let maxAPR;
-        const now = BigInt(Math.floor(Date.now() / 1000));
-        const lockEndTime = BigInt(position.info.lockEndTime);
-        const isLocked = now < lockEndTime;
-        
-        if (!isLocked) {
-          // Unlocked stakes use 30-day lock APR cap
-          maxAPR = BigInt(120); // 1.2%
-        } else {
-          // Locked stakes based on remaining time
-          const remainingTime = lockEndTime - now;
-          
-          if (remainingTime <= BigInt(30 * 24 * 3600)) {
-            maxAPR = BigInt(120); // 30-day lock: 1.2%
-          } else if (remainingTime <= BigInt(90 * 24 * 3600)) {
-            maxAPR = BigInt(350); // 90-day lock: 3.5%
-          } else if (remainingTime <= BigInt(180 * 24 * 3600)) {
-            maxAPR = BigInt(650); // 180-day lock: 6.5%
-          } else {
-            maxAPR = BigInt(1200); // 365-day lock: 12.0%
-          }
-        }
-        
-        // Calculate max possible reward for this period based on max APR
-        const maxRewardForPeriod = (position.info.hskAmount * maxAPR * blockDiff) / 
-                                  (BASIS_POINTS * BLOCKS_PER_YEAR);
-        
-        // Calculate user's share of global rewards
-        const userShareRatio = position.info.sharesAmount * BigInt(10000) / rewardParams.totalShares;
-        const baseNewRewards = (estimatedNewRewards * userShareRatio) / BigInt(10000);
-        
-        // Apply APR limit, take the smaller value
-        const userNewRewards = baseNewRewards < maxRewardForPeriod ? 
-                              baseNewRewards : maxRewardForPeriod;
-        
-        // Calculate estimated total profit
-        const confirmedProfit = position.info.currentHskValue - position.info.hskAmount;
-        const estimatedProfit = confirmedProfit + userNewRewards;
-        
-        // Log detailed calculation info (for debugging)
-        if (position.id === 2) { // Only show details for the first stake
-          console.log(`Stake #${position.id} calculation details:`, {
-            shares: position.info.sharesAmount.toString(),
-            totalShares: rewardParams.totalShares.toString(),
-            shareRatio: (Number(userShareRatio) / 10000).toFixed(6),
-            baseReward: baseNewRewards.toString(),
-            maxAPR: (Number(maxAPR) / 100).toFixed(2) + '%',
-            maxRewardForPeriod: maxRewardForPeriod.toString(),
-            appliedReward: userNewRewards.toString(),
-            confirmedProfit: confirmedProfit.toString(),
-            estimatedProfit: estimatedProfit.toString()
-          });
-        }
-        
-        return {
-          ...position,
-          estimatedProfit,
-          pendingReward: userNewRewards
-        };
-      });
-      
-      // Calculate new total estimated rewards
-      const newEstimatedTotalRewards = updatedPositions
-        .filter(pos => !pos.info.isWithdrawn)
-        .reduce((sum, pos) => {
-          const profit = pos.estimatedProfit || (pos.info.currentHskValue - pos.info.hskAmount);
-          return sum + profit;
-        }, BigInt(0));
-      
-      setStakedPositions(updatedPositions);
-      setEstimatedTotalRewards(newEstimatedTotalRewards);
-      
-      console.log('Updated estimated total rewards:', newEstimatedTotalRewards.toString());
-      
-    } catch (error) {
-      console.error('Error calculating estimated rewards:', error);
-    } finally {
-      setIsEstimating(false);
-    }
-  }, [currentBlockNumber, rewardParams]);
-  
-  // Apply estimated rewards when block changes
-  useEffect(() => {
-    if (stakedPositions.length > 0 && rewardParams.lastRewardBlock > 0) {
-      calculateEstimatedRewards();
-    }
-  }, [calculateEstimatedRewards, stakedPositions.length, rewardParams.lastRewardBlock]);
-  
-  // Load all user locked stakes
+  // 加载用户所有锁定质押
   const fetchStakedPositions = useCallback(async () => {
     if (!isConnected || !address || !lockedStakeCount || !publicClient) return;
     
     setIsLoadingPositions(true);
     
     try {
-      // Create stake ID array
+      // 创建质押ID数组
       const stakeIds = Array.from({ length: Number(lockedStakeCount) }, (_, i) => i);
       
-      // Fetch reward parameters before getting stake info
-      await fetchRewardParams();
-      
-      // Batch fetch all stake information
+      // 批量获取所有质押信息
       const stakesInfo = await batchGetStakingInfo(contractAddress, publicClient, stakeIds, address);
       
-      // Calculate total confirmed rewards for reference only
+      // 计算总确认收益仅供参考
       const confirmedTotalReward = stakesInfo
         .filter(info => !info.error && !info.isWithdrawn)
-        .reduce((sum, info) => sum + info.reward, BigInt(0));
+        .reduce((sum, info) => sum + (info.currentHskValue - info.hskAmount), BigInt(0));
       
       setTotalRewards(confirmedTotalReward);
       
-      // Convert to required format - include all positions, including withdrawn ones
+      // 转换为所需格式 - 包括所有质押，包括已提取的
       const positions = stakesInfo
         .filter(info => !info.error)
         .map(info => ({
@@ -282,41 +70,33 @@ export default function PortfolioPage() {
             lockEndTime: info.lockEndTime,
             isWithdrawn: info.isWithdrawn,
             isLocked: info.isLocked
-          },
-          // Initialize with confirmed values, will be updated by calculateEstimatedRewards
-          estimatedProfit: info.reward,
-          pendingReward: BigInt(0)
+          }
         }));
       
       setStakedPositions(positions);
       setLastUpdateTime(new Date());
       
-      console.log('Stakes data loaded successfully:', positions.length, 'positions');
     } catch (error) {
       console.error('Failed to fetch staked positions:', error);
       toast.error('Failed to load your stakes');
     } finally {
       setIsLoadingPositions(false);
     }
-  }, [address, isConnected, lockedStakeCount, publicClient, contractAddress, fetchRewardParams]);
+  }, [address, isConnected, lockedStakeCount, publicClient, contractAddress]);
   
-  // Initial data load
+  // 初始加载数据
   useEffect(() => {
     fetchStakedPositions();
     
-    // Fetch reward parameters regularly but less frequently
+    // 定期刷新数据
     const intervalId = setInterval(() => {
-      fetchRewardParams();
-    }, 300000); // Every 5 minutes instead of every minute
+      fetchStakedPositions();
+    }, 300000); // 每5分钟刷新一次
     
     return () => clearInterval(intervalId);
-  }, [fetchStakedPositions, fetchRewardParams]);
+  }, [fetchStakedPositions]);
   
-  // Add modal state
-  const [showUnstakeModal, setShowUnstakeModal] = useState(false);
-  const [unstakingPosition, setUnstakingPosition] = useState<number | null>(null);
-  
-  // Modal handling - opens the confirmation dialog
+  // Modal处理 - 打开确认对话框
   const openUnstakeConfirmation = (stakeId: number) => {
     const position = stakedPositions.find(pos => pos.id === stakeId);
     if (!position) return;
@@ -325,21 +105,21 @@ export default function PortfolioPage() {
     setShowUnstakeModal(true);
   };
   
-  // Replaces the old handleUnstake function
+  // 处理解除质押点击
   const handleUnstakeClick = (stakeId: number) => {
     const position = stakedPositions.find(pos => pos.id === stakeId);
     if (!position) return;
     
     if (position.info.isLocked) {
-      // For locked positions, show confirmation dialog
+      // 对于锁定的位置，显示确认对话框
       openUnstakeConfirmation(stakeId);
     } else {
-      // For unlocked positions, unstake directly
+      // 对于未锁定的位置，直接解除质押
       executeUnstake(stakeId);
     }
   };
   
-  // Actual unstaking execution
+  // 执行解除质押
   const executeUnstake = async (stakeId: number) => {
     if (processingStakeId !== null) return;
     
@@ -365,13 +145,13 @@ export default function PortfolioPage() {
     }
   };
   
-  // Manually refresh data
+  // 手动刷新数据
   const handleRefresh = () => {
     fetchStakedPositions();
     toast.info('Refreshing stake information...');
   };
   
-  // Format remaining time
+  // 格式化剩余时间
   const formatTimeRemaining = (endTime: bigint) => {
     const now = Math.floor(Date.now() / 1000);
     const remaining = Number(endTime) - now;
@@ -388,9 +168,40 @@ export default function PortfolioPage() {
       return `${hours} hrs ${minutes} mins`;
     } else {
       const minutes = Math.floor(remaining / 60);
-      return `${minutes} mins`;
+      const seconds = remaining % 60;
+      return `${minutes} mins ${seconds} sec`;
     }
   };
+  
+  // 获取质押期APR值 - 使用useMemo避免重复计算
+  const getAPRForStakePeriod = useCallback((lockEndTime: bigint) => {
+    if (!estimatedAPRs || aprsLoading) {
+      return 'Loading...';
+    }
+    
+    const now = Math.floor(Date.now() / 1000);
+    const remainingTime = Number(lockEndTime) - now;
+    
+    // 将合约返回的APR值除以100转换为百分比
+    const apr30 = Number(estimatedAPRs[0] || BigInt(0)) / 100;
+    const apr90 = Number(estimatedAPRs[1] || BigInt(0)) / 100;
+    const apr180 = Number(estimatedAPRs[2] || BigInt(0)) / 100;
+    const apr365 = Number(estimatedAPRs[3] || BigInt(0)) / 100;
+    
+    if (remainingTime <= 0) {
+      return `${apr30.toFixed(2)}%`; // 已解锁的质押
+    } else if (remainingTime <= 30 * 24 * 3600) {
+      return `${apr30.toFixed(2)}%`; // 30天锁定
+    } else if (remainingTime <= 90 * 24 * 3600) {
+      return `${apr90.toFixed(2)}%`; // 90天锁定
+    } else if (remainingTime <= 180 * 24 * 3600) {
+      return `${apr180.toFixed(2)}%`; // 180天锁定
+    } else {
+      return `${apr365.toFixed(2)}%`; // 365天锁定
+    }
+  }, [estimatedAPRs, aprsLoading]);
+  
+
 
   return (
     <MainLayout>
@@ -423,18 +234,25 @@ export default function PortfolioPage() {
               </button>
             </div>
             
+            {/* Add data source indicator */}
+            <div className="mb-4 text-sm">
+              <span className="text-slate-400">
+                APR Data Source: {' '}
+                {aprDataSource === 'contract' ? (
+                  <span className="text-green-500">Contract (Live Data)</span>
+                ) : (
+                  <span className="text-yellow-500">Loading...</span>
+                )}
+              </span>
+            </div>
+            
             {lastUpdateTime && (
               <div className="text-sm text-slate-400 mb-4">
                 Last update: {lastUpdateTime.toLocaleTimeString()}
-                {estimatedTotalRewards > totalRewards && (
-                  <span className="ml-2 text-green-400">
-                    • Rewards are continuously accumulating
-                  </span>
-                )}
               </div>
             )}
             
-            {/* Stats overview */}
+            {/* 概览统计 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
                 <div className="flex items-center gap-2 mb-3">
@@ -451,7 +269,7 @@ export default function PortfolioPage() {
                   )}
                 </p>
               </div>
-
+  
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <svg className="w-5 h-5 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -467,7 +285,7 @@ export default function PortfolioPage() {
                   )}
                 </p>
               </div>
-
+  
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <svg className="w-5 h-5 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -480,18 +298,18 @@ export default function PortfolioPage() {
                     <span className="inline-block w-24 h-7 bg-slate-700 rounded animate-pulse"></span>
                   ) : (
                     <>
-                      +{formatBigInt(estimatedTotalRewards)} HSK
+                      +{formatBigInt(totalRewards)} HSK
                     </>
                   )}
                 </p>
               </div>
             </div>
-
-            {/* Active stakes list */}
+  
+            {/* 活跃质押列表 */}
             <h2 className="text-2xl font-light text-white mb-6">Active Stakes</h2>
             
             {isLoadingPositions ? (
-              // Skeleton loading cards
+              // 骨架加载卡片
               <div className="space-y-4">
                 {[1, 2].map((i) => (
                   <div key={i} className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 animate-pulse">
@@ -542,21 +360,14 @@ export default function PortfolioPage() {
                       <div className="w-full sm:w-auto mb-4 sm:mb-0 sm:mx-4">
                         <p className="text-sm text-slate-400 mb-1">Current Value</p>
                         <p className="text-xl font-medium text-white">
-                          {/* Show estimated current value */}
-                          {formatBigInt(position.info.hskAmount + (position.estimatedProfit || BigInt(0)))} HSK
+                          {formatBigInt(position.info.currentHskValue)} HSK
                         </p>
                       </div>
                       
                       <div className="w-full sm:w-auto mb-4 sm:mb-0">
-                        <p className="text-sm text-slate-400 mb-1">Profit</p>
+                        <p className="text-sm text-slate-400 mb-1">APY</p>
                         <p className="text-xl font-medium text-green-500">
-                          {/* Only show estimated profit */}
-                          +{formatBigInt(position.estimatedProfit || BigInt(0))} HSK
-                          {position.pendingReward && position.pendingReward > 0 && (
-                            <span className="block text-xs text-green-400">
-                              (+{formatBigInt(position.pendingReward)} since last update)
-                            </span>
-                          )}
+                          {getAPRForStakePeriod(position.info.lockEndTime)}
                         </p>
                       </div>
                       
@@ -604,7 +415,7 @@ export default function PortfolioPage() {
                 ))}
               </div>
             ) : (
-              // No stakes found
+              // 未找到质押
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-8 border border-slate-700/50 text-center">
                 <svg className="w-12 h-12 text-slate-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -621,53 +432,16 @@ export default function PortfolioPage() {
                 </a>
               </div>
             )}
-            
-            {/* Completed stakes section */}
-            {stakedPositions.some(pos => pos.info.isWithdrawn) && (
-              <>
-                <h2 className="text-2xl font-light text-white mb-6 mt-12">Completed Stakes</h2>
-                <div className="space-y-4">
-                  {stakedPositions
-                    .filter(position => position.info.isWithdrawn)
-                    .map((position) => (
-                    <div key={position.id} className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 opacity-70">
-                      <div className="flex flex-wrap justify-between mb-2">
-                        <div className="w-full sm:w-auto mb-4 sm:mb-0">
-                          <h3 className="text-sm text-slate-400 mb-1">Stake #{position.id}</h3>
-                          <div className="flex items-center">
-                            <p className="text-xl font-medium text-white">
-                              {formatBigInt(position.info.sharesAmount)} stHSK
-                            </p>
-                            <span className="ml-3 px-2 py-1 text-xs font-medium bg-slate-600/50 text-slate-300 rounded">
-                              Withdrawn
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="w-full sm:w-auto mb-4 sm:mb-0 sm:mx-4">
-                          <p className="text-sm text-slate-400 mb-1">Staked Amount</p>
-                          <p className="text-xl font-medium text-white">
-                            {formatBigInt(position.info.hskAmount)} HSK
-                          </p>
-                        </div>
-                        
-                        <div className="w-full sm:w-auto">
-                          <p className="text-sm text-slate-400 mb-1">Withdrawn Amount</p>
-                          <p className="text-xl font-medium text-white">
-                            {formatBigInt(position.info.currentHskValue)} HSK
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
-      
-      {/* Confirmation Modal */}
+
+      {/* <div className="mt-12 pt-12 border-t border-slate-700/50">
+        <h2 className="text-4xl font-light text-white mb-6">Staking History</h2>
+        <StakingHistory />
+      </div>
+       */}
+      {/* 确认模态窗口 */}
       {showUnstakeModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
