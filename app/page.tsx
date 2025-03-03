@@ -31,7 +31,7 @@ export default function Home() {
   const isLoadingCombined = initialLoading || apiLoading || aprsLoading;
   
   // Beijing launch time - March 3, 2025 20:00:00
-  const launchTime = new Date('2025-03-03T20:00:00+08:00').getTime();
+  const launchTime = new Date('2025-03-01T20:00:00+08:00').getTime();
 
   // 检查环境变量
   useEffect(() => {
@@ -257,7 +257,6 @@ export default function Home() {
   if (!isLaunched || !isAppEnabled) {
     // 显示不同的消息，取决于是时间未到还是应用未启用
     const message = "Launching on March 3, 2025 20:00 UTC+8"
-    
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
         <div className="container mx-auto px-4 py-8 max-w-4xl text-center">
