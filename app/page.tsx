@@ -31,7 +31,7 @@ export default function Home() {
   const isLoadingCombined = initialLoading || apiLoading || aprsLoading;
   
   // Beijing launch time - March 3, 2025 20:00:00
-  const launchTime = new Date('2025-03-03T20:00:00+08:00').getTime();
+  const launchTime = new Date('2025-03-01T20:00:00+08:00').getTime();
 
   // 检查环境变量
   useEffect(() => {
