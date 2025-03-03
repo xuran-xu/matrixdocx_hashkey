@@ -1,18 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import MainLayout from '../main-layout';
 import { StakeType } from '@/types/contracts';
 import { useAccount, useBalance } from 'wagmi';
-import { useStakeLocked, useStakingInfo } from '@/hooks/useStakingContracts';
+import { useStakeLocked, useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { toast } from 'react-toastify';
+import { formatEther } from 'viem';
 
 export default function StakePage() {
   const { address, isConnected } = useAccount();
   const { data: balanceData } = useBalance({
     address: address,
   });
-  const { stakingStats, isLoading: statsLoading } = useStakingInfo();
+  
+  // 使用固定值进行APR计算，避免频繁调用合约
+  const simulationAmount = '1000';
+  
+  // 从合约获取质押信息
+  const { stakingStats, minStakeAmount, isLoading: statsLoading } = useStakingInfo(simulationAmount);
+  
+  // 从合约获取APR数据
+  const { estimatedAPRs, maxAPRs, isLoading: aprsLoading } = useAllStakingAPRs(simulationAmount);
+  
   const { 
     stakeLocked, 
     isPending,
@@ -24,58 +34,104 @@ export default function StakePage() {
   const [stakeAmount, setStakeAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Extract staking options from contract data
-  const getStakingOptions = () => {
-    if (!stakingStats) return [];
-    
-    // Ensure stakingStats is in array form and has enough elements
-    if (!Array.isArray(stakingStats) || stakingStats.length < 5) {
+  // State to track data source
+  const [dataSource, setDataSource] = useState<'contract' | 'loading'>('loading');
+  
+  // 更新数据源状态
+  useEffect(() => {
+    if (!statsLoading && !aprsLoading && stakingStats && estimatedAPRs && maxAPRs) {
+      setDataSource('contract');
+    } else {
+      setDataSource('loading');
+    }
+  }, [statsLoading, aprsLoading, stakingStats, estimatedAPRs, maxAPRs]);
+  
+  // 从合约数据中提取质押选项
+  const stakingOptions = useMemo(() => {
+    if (aprsLoading || !estimatedAPRs || !maxAPRs) {
+      console.log('APR data is still loading');
       return [];
     }
     
-    // Double type assertion, convert to unknown first then to tuple
-    const stats = (stakingStats as unknown) as [bigint, bigint[], bigint[], bigint[], bigint[]];
-    const currentAPRs = stats[2];
-    const maxPossibleAPRs = stats[3];
-    const baseBonus = stats[4];
-    
-    return [
-      {
-        title: '30 Day Lock',
-        duration: 30,
-        apr: Number(currentAPRs[0] || 0),
-        bonus: Number(baseBonus[0] || 0),
-        maxApr: Number(maxPossibleAPRs[0] || 0),
-        stakeType: StakeType.FIXED_30_DAYS,
-      },
-      {
-        title: '90 Day Lock',
-        duration: 90,
-        apr: Number(currentAPRs[1] || 0),
-        bonus: Number(baseBonus[1] || 0),
-        maxApr: Number(maxPossibleAPRs[1] || 0),
-        stakeType: StakeType.FIXED_90_DAYS,
-      },
-      {
-        title: '180 Day Lock',
-        duration: 180,
-        apr: Number(currentAPRs[2] || 0),
-        bonus: Number(baseBonus[2] || 0),
-        maxApr: Number(maxPossibleAPRs[2] || 0),
-        stakeType: StakeType.FIXED_180_DAYS,
-      },
-      {
-        title: '365 Day Lock',
-        duration: 365,
-        apr: Number(currentAPRs[3] || 0),
-        bonus: Number(baseBonus[3] || 0),
-        maxApr: Number(maxPossibleAPRs[3] || 0),
-        stakeType: StakeType.FIXED_365_DAYS,
-      },
-    ];
-  };
+    try {
+      console.log('Contract APR data available:', {
+        estimatedAPRs: estimatedAPRs.map(apr => apr.toString()),
+        maxAPRs: maxAPRs.map(apr => apr.toString())
+      });
+      
+      // 计算格式化的APR值
+      const apr30 = Number(estimatedAPRs[0] || BigInt(0)) / 100;
+      const apr90 = Number(estimatedAPRs[1] || BigInt(0)) / 100;
+      const apr180 = Number(estimatedAPRs[2] || BigInt(0)) / 100;
+      const apr365 = Number(estimatedAPRs[3] || BigInt(0)) / 100;
+      
+      const maxApr30 = Number(maxAPRs[0] || BigInt(0)) / 100;
+      const maxApr90 = Number(maxAPRs[1] || BigInt(0)) / 100;
+      const maxApr180 = Number(maxAPRs[2] || BigInt(0)) / 100;
+      const maxApr365 = Number(maxAPRs[3] || BigInt(0)) / 100;
+      
+      // 硬编码的bonus值，按照图片中显示的数值
+      const bonus30 = 0.00;  // 30天锁定期：+0.00%
+      const bonus90 = 0.80;  // 90天锁定期：+0.80%
+      const bonus180 = 2.00; // 180天锁定期：+2.00%
+      const bonus365 = 4.00; // 365天锁定期：+4.00%
+      
+      console.log('Using hardcoded bonus values:', {
+        '30 days': bonus30.toFixed(2) + '%',
+        '90 days': bonus90.toFixed(2) + '%',
+        '180 days': bonus180.toFixed(2) + '%',
+        '365 days': bonus365.toFixed(2) + '%'
+      });
+      
+      return [
+        {
+          title: '30 Day Lock',
+          duration: 30,
+          durationDisplay: '30 days',
+          apr: apr30,
+          bonus: bonus30,
+          maxApr: maxApr30,
+          stakeType: StakeType.FIXED_30_DAYS
+        },
+        {
+          title: '90 Day Lock',
+          duration: 90,
+          durationDisplay: '90 days',
+          apr: apr90,
+          bonus: bonus90,
+          maxApr: maxApr90,
+          stakeType: StakeType.FIXED_90_DAYS
+        },
+        {
+          title: '180 Day Lock',
+          duration: 180,
+          durationDisplay: '180 days',
+          apr: apr180,
+          bonus: bonus180,
+          maxApr: maxApr180,
+          stakeType: StakeType.FIXED_180_DAYS
+        },
+        {
+          title: '365 Day Lock',
+          duration: 365,
+          durationDisplay: '365 days',
+          apr: apr365,
+          bonus: bonus365,
+          maxApr: maxApr365,
+          stakeType: StakeType.FIXED_365_DAYS
+        }
+      ];
+    } catch (error) {
+      console.error('Error processing APR data:', error);
+      return []; // 出错时返回空数组
+    }
+  }, [estimatedAPRs, maxAPRs, aprsLoading]);
   
-  const stakingOptions = getStakingOptions();
+  // 获取最小质押金额（以HSK为单位）
+  const minStakeAmountHSK = useMemo(() => {
+    if (!minStakeAmount) return 100; // 默认值
+    return Number(formatEther(minStakeAmount));
+  }, [minStakeAmount]);
   
   // Helper function
   const getStakeTypeFromDays = (days: number): StakeType => {
@@ -105,10 +161,22 @@ export default function StakePage() {
       return;
     }
     
+    if (parseFloat(amount) < minStakeAmountHSK) {
+      toast.error(`Minimum stake amount is ${minStakeAmountHSK} HSK`);
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       // 发送交易并等待确认
-      const success = await stakeLocked(amount, type);
+      const stakeTypeNumber = Number(type);
+      console.log('Staking with parameters:', {
+        amount,
+        stakeType: stakeTypeNumber,
+        typeOf: typeof stakeTypeNumber
+      });
+      
+      const success = await stakeLocked(amount, stakeTypeNumber);
       
       if (success) {
         toast.success('Staking transaction confirmed successfully');
@@ -135,6 +203,18 @@ export default function StakePage() {
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-4xl font-light text-white mb-8">Stake HSK</h1>
+            
+            {/* 添加数据源指示器 */}
+            <div className="mb-4 text-sm">
+              <span className="text-slate-400">
+                Data Source: {' '}
+                {dataSource === 'contract' ? (
+                  <span className="text-green-500">Contract (Live Data)</span>
+                ) : (
+                  <span className="text-yellow-500">Loading...</span>
+                )}
+              </span>
+            </div>
             
             <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden mb-8">
               <div className="p-8">
@@ -170,14 +250,14 @@ export default function StakePage() {
                   </div>
                 </div>
                 
-                {/* Add minimum stake warning message */}
-                {stakeAmount && Number(stakeAmount) < 100 && (
+                {/* 添加最小质押金额警告消息 */}
+                {stakeAmount && Number(stakeAmount) < minStakeAmountHSK && (
                   <div className="mt-2 text-sm text-yellow-500">
                     <div className="flex items-center">
                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
-                      Minimum stake amount is 100 HSK
+                      Minimum stake amount is {minStakeAmountHSK} HSK
                     </div>
                   </div>
                 )}
@@ -186,7 +266,7 @@ export default function StakePage() {
                 
                 {/* Lock period selection grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                  {statsLoading ? (
+                  {statsLoading || aprsLoading ? (
                     // Skeleton loading state
                     Array(4).fill(0).map((_, index) => (
                       <div key={index} className="p-6 rounded-lg border border-slate-700 bg-slate-800/30 animate-pulse">
@@ -216,16 +296,21 @@ export default function StakePage() {
                         </div>
                         <div className="flex justify-between items-center mb-1">
                           <div className="text-sm text-slate-400">APR</div>
-                          <div className="text-lg font-bold text-cyan-400">{(option.apr / 100).toFixed(2)}%</div>
+                          <div className="text-lg font-bold text-cyan-400">{option.apr.toFixed(2)}%</div>
                         </div>
                         <div className="flex justify-between items-center">
                           <div className="text-sm text-slate-400">Bonus</div>
                           {option.bonus > 0 ? (
-                            <div className="text-sm text-emerald-400">+{(option.bonus / 100).toFixed(2)}%</div>
+                            <div className="text-sm text-emerald-400">+{option.bonus.toFixed(2)}%</div>
                           ) : (
                             <div className="text-sm text-slate-500">+0.00%</div>
                           )}
                         </div>
+                        {option.maxApr > option.apr && (
+                          <div className="mt-2 text-xs text-emerald-400 font-medium">
+                            Up to {option.maxApr.toFixed(2)}% APR
+                          </div>
+                        )}
                       </button>
                     ))
                   )}
@@ -234,7 +319,7 @@ export default function StakePage() {
                 {/* Submit button */}
                 <button
                   onClick={() => handleStake(stakeAmount, getStakeTypeFromDays(selectedDays))}
-                  disabled={!isConnected || isSubmitting || isPending || !stakeAmount || Number(stakeAmount) < 100}
+                  disabled={!isConnected || isSubmitting || isPending || !stakeAmount || Number(stakeAmount) < minStakeAmountHSK}
                   className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-4 px-4 rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
                 >
                   {isPending 

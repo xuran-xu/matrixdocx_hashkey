@@ -166,6 +166,19 @@ export default function Home() {
       const maxApr180 = Number(maxAPRs[2] || BigInt(0)) / 100;
       const maxApr365 = Number(maxAPRs[3] || BigInt(0)) / 100;
       
+      // 硬编码的bonus值，按照图片中显示的数值
+      const bonus30 = 0.00;  // 30天锁定期：+0.00%
+      const bonus90 = 0.80;  // 90天锁定期：+0.80%
+      const bonus180 = 2.00; // 180天锁定期：+2.00%
+      const bonus365 = 4.00; // 365天锁定期：+4.00%
+      
+      console.log('Using hardcoded bonus values:', {
+        '30 days': bonus30.toFixed(2) + '%',
+        '90 days': bonus90.toFixed(2) + '%',
+        '180 days': bonus180.toFixed(2) + '%',
+        '365 days': bonus365.toFixed(2) + '%'
+      });
+      
       console.log('Contract APR values (formatted):', {
         '30 days': {
           estimated: apr30.toFixed(2) + '%',
@@ -192,7 +205,7 @@ export default function Home() {
           duration: 30,
           durationDisplay: '30 days',
           apr: apr30,
-          bonus: stakingStats?.baseBonus ? Number(stakingStats.baseBonus[0] || BigInt(0)) / 100 : 0,
+          bonus: bonus30,
           maxApr: maxApr30,
           stakeType: StakeType.FIXED_30_DAYS
         },
@@ -201,7 +214,7 @@ export default function Home() {
           duration: 90,
           durationDisplay: '90 days',
           apr: apr90,
-          bonus: stakingStats?.baseBonus ? Number(stakingStats.baseBonus[1] || BigInt(0)) / 100 : 0,
+          bonus: bonus90,
           maxApr: maxApr90,
           stakeType: StakeType.FIXED_90_DAYS
         },
@@ -210,7 +223,7 @@ export default function Home() {
           duration: 180,
           durationDisplay: '180 days',
           apr: apr180,
-          bonus: stakingStats?.baseBonus ? Number(stakingStats.baseBonus[2] || BigInt(0)) / 100 : 0,
+          bonus: bonus180,
           maxApr: maxApr180,
           stakeType: StakeType.FIXED_180_DAYS
         },
@@ -219,7 +232,7 @@ export default function Home() {
           duration: 365,
           durationDisplay: '365 days',
           apr: apr365,
-          bonus: stakingStats?.baseBonus ? Number(stakingStats.baseBonus[3] || BigInt(0)) / 100 : 0,
+          bonus: bonus365,
           maxApr: maxApr365,
           stakeType: StakeType.FIXED_365_DAYS
         }
@@ -229,7 +242,7 @@ export default function Home() {
       setAprDataSource('loading');
       return []; // Return empty array on error
     }
-  }, [estimatedAPRs, maxAPRs, aprsLoading, stakingStats]);
+  }, [estimatedAPRs, maxAPRs, aprsLoading]);
   
   // 显示加载状态
   if (isLoading) {
