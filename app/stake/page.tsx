@@ -7,6 +7,7 @@ import { useAccount, useBalance } from 'wagmi';
 import { useStakeLocked, useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { toast } from 'react-toastify';
 import { formatEther } from 'viem';
+import Link from 'next/link';
 
 export default function StakePage() {
   const { address, isConnected } = useAccount();
@@ -36,6 +37,39 @@ export default function StakePage() {
   
   // State to track data source
   const [dataSource, setDataSource] = useState<'contract' | 'loading'>('loading');
+  
+  // 从URL参数中获取默认选择的质押类型
+  useEffect(() => {
+    // 获取URL参数
+    const params = new URLSearchParams(window.location.search);
+    const typeParam = params.get('type');
+    
+    if (typeParam !== null) {
+      // 将参数转换为数字
+      const typeNumber = parseInt(typeParam, 10);
+      
+      // 根据质押类型设置对应的天数
+      switch (typeNumber) {
+        case StakeType.FIXED_30_DAYS:
+          setSelectedDays(30);
+          break;
+        case StakeType.FIXED_90_DAYS:
+          setSelectedDays(90);
+          break;
+        case StakeType.FIXED_180_DAYS:
+          setSelectedDays(180);
+          break;
+        case StakeType.FIXED_365_DAYS:
+          setSelectedDays(365);
+          break;
+        default:
+          // 默认选择30天
+          setSelectedDays(30);
+      }
+      
+      console.log('Selected stake type from URL:', typeNumber, 'days:', selectedDays);
+    }
+  }, []);
   
   // 更新数据源状态
   useEffect(() => {
@@ -262,6 +296,31 @@ export default function StakePage() {
                   </div>
                 )}
                 
+                {/* 添加选中方案的摘要信息 */}
+                {selectedDays > 0 && stakingOptions.length > 0 && (
+                  <div className="mt-4 mb-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                    <div className="text-sm text-white">
+                      <span className="text-cyan-400 font-medium">Selected Plan: </span>
+                      <span className="text-white">{stakingOptions.find(opt => opt.duration === selectedDays)?.title || `${selectedDays} Day Lock`}</span>
+                      <span className="mx-2 text-slate-500">|</span>
+                      <span className="text-cyan-400 font-medium">Duration: </span>
+                      <span className="text-white">{selectedDays} days</span>
+                      <span className="mx-2 text-slate-500">|</span>
+                      <span className="text-cyan-400 font-medium">APR: </span>
+                      <span className="text-cyan-300 font-semibold">{stakingOptions.find(opt => opt.duration === selectedDays)?.apr.toFixed(2) || '0.00'}%</span>
+                      <span className="mx-2 text-slate-500">|</span>
+                      <span className="text-cyan-400 font-medium">Lock Reward: </span>
+                      {(stakingOptions.find(opt => opt.duration === selectedDays)?.bonus || 0) > 0 ? (
+                        <span className="text-emerald-300 font-semibold">
+                          {stakingOptions.find(opt => opt.duration === selectedDays)?.bonus.toFixed(2) || '0.00'}%
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">0.00%</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 <h2 className="text-2xl font-light text-white mb-6">Select Lock Period</h2>
                 
                 {/* Lock period selection grid */}
@@ -284,30 +343,48 @@ export default function StakePage() {
                         onClick={() => setSelectedDays(option.duration)}
                         className={`p-6 rounded-lg border ${
                           selectedDays === option.duration
-                            ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                            ? 'border-primary bg-primary/20 ring-4 ring-primary/30 shadow-lg shadow-primary/10'
                             : 'border-slate-700 hover:border-primary/50 bg-slate-800/30'
-                        } transition-all text-left`}
+                        } transition-all text-left relative`}
                         type="button"
                       >
-                        <div className="text-lg font-medium text-white mb-2">{option.title}</div>
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="text-sm text-slate-400">Duration</div>
-                          <div className="text-base text-white">{option.duration} days</div>
+                        {selectedDays === option.duration && (
+                          <div className="absolute top-2 right-2 bg-primary rounded-full p-1">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                        <div className={`text-xl ${selectedDays === option.duration ? 'text-cyan-300 font-bold' : 'text-white'} mb-2`}>
+                          {option.title}
                         </div>
                         <div className="flex justify-between items-center mb-1">
-                          <div className="text-sm text-slate-400">APR</div>
-                          <div className="text-lg font-bold text-cyan-400">{option.apr.toFixed(2)}%</div>
+                          <div className={`text-sm ${selectedDays === option.duration ? 'text-cyan-400 font-medium' : 'text-slate-400'}`}>Duration</div>
+                          <div className={`text-base ${selectedDays === option.duration ? 'text-white font-semibold' : 'text-white'}`}>
+                            {option.duration} days
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-sm text-slate-400">Bonus</div>
+                        <div className="flex justify-between items-center mb-1">
+                          <div className={`text-sm ${selectedDays === option.duration ? 'text-cyan-400 font-medium' : 'text-slate-400'}`}>APR</div>
+                          <div className={`text-xl font-bold ${selectedDays === option.duration ? 'text-cyan-300' : 'text-cyan-400'}`}>
+                            {option.apr.toFixed(2)}%
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <div className={`text-sm ${selectedDays === option.duration ? 'text-cyan-400 font-medium' : 'text-slate-400'}`}>Bonus</div>
                           {option.bonus > 0 ? (
-                            <div className="text-sm text-emerald-400">+{option.bonus.toFixed(2)}%</div>
+                            <div className="text-right">
+                              <div className={`text-xs ${selectedDays === option.duration ? 'text-emerald-200' : 'text-emerald-300'}`}>Lock Reward</div>
+                              <div className={`text-lg ${selectedDays === option.duration ? 'text-emerald-300 font-semibold' : 'text-emerald-400'}`}>
+                                {option.bonus.toFixed(2)}%
+                              </div>
+                            </div>
                           ) : (
-                            <div className="text-sm text-slate-500">+0.00%</div>
+                            <div className={`text-lg ${selectedDays === option.duration ? 'text-slate-300' : 'text-slate-500'}`}>0.00%</div>
                           )}
                         </div>
                         {option.maxApr > option.apr && (
-                          <div className="mt-2 text-xs text-emerald-400 font-medium">
+                          <div className={`mt-2 text-xs font-medium ${selectedDays === option.duration ? 'text-emerald-300' : 'text-emerald-400'}`}>
                             Up to {option.maxApr.toFixed(2)}% APR
                           </div>
                         )}
@@ -328,6 +405,16 @@ export default function StakePage() {
                       ? 'Confirming transaction...' 
                       : 'Confirm Staking'}
                 </button>
+                
+                {/* 添加更醒目的免责声明链接 */}
+                <div className="mt-6 mb-2 text-center">
+                  <Link 
+                    href="/disclaimer" 
+                    className="text-white hover:text-primary transition-colors text-base font-medium"
+                  >
+                    View Staking Disclaimer and Risk Warning
+                  </Link>
+                </div>
               </div>
             </div>
 

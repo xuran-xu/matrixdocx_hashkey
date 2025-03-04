@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import MainLayout from '../main-layout';
 import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { LockedStakeInfo } from '@/types/contracts';

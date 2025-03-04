@@ -440,15 +440,17 @@ export default function Home() {
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-400">APR</span>
-                    <div>
-                      <span className="text-white font-medium">{option.apr.toFixed(2)}%</span>
-                      {option.bonus > 0 && (
-                        <span className="text-emerald-400 ml-1">
-                          (+{option.bonus.toFixed(2)}%)
-                        </span>
-                      )}
-                    </div>
+                    <span className="text-slate-400">Current APR</span>
+                    <span className="text-white font-medium">{option.apr.toFixed(2)}%</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Lock Reward</span>
+                    {option.bonus > 0 ? (
+                      <span className="text-emerald-400 font-medium">{option.bonus.toFixed(2)}%</span>
+                    ) : (
+                      <span className="text-slate-400">0.00%</span>
+                    )}
                   </div>
                   
                   <div className="flex justify-between items-center">
