@@ -405,16 +405,6 @@ export default function StakePage() {
                       ? 'Confirming transaction...' 
                       : 'Confirm Staking'}
                 </button>
-                
-                {/* 添加更醒目的免责声明链接 */}
-                <div className="mt-6 mb-2 text-center">
-                  <Link 
-                    href="/disclaimer" 
-                    className="text-white hover:text-primary transition-colors text-base font-medium"
-                  >
-                    View Staking Disclaimer and Risk Warning
-                  </Link>
-                </div>
               </div>
             </div>
 
@@ -449,6 +439,19 @@ export default function StakePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
                   </svg>
                   <span className="text-slate-300">Received stHSK represents your share in the staking pool</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 mt-0.5 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-slate-300">
+                    <Link 
+                      href="/disclaimer" 
+                      className="text-white hover:text-primary transition-colors"
+                    >
+                      View Staking Disclaimer and Risk Warning
+                    </Link>
+                  </span>
                 </li>
               </ul>
             </div>
