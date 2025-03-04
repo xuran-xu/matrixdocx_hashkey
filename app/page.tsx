@@ -10,6 +10,7 @@ import { useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Image from 'next/image';
+import AddressBar from '@/components/AddressBar';
 
 export default function Home() {
   // 添加本地loading状态，初始为true
@@ -340,6 +341,13 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </Link>
+            </div>
+            
+            {/* AddressBar component placed here */}
+            <div className="mt-10 flex justify-center">
+              <div className="w-full max-w-2xl">
+                <AddressBar />
+              </div>
             </div>
           </div>
           
