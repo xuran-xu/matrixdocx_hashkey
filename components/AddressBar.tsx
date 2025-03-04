@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useWatchAsset } from 'wagmi';
+import { useWatchAsset, useAccount } from 'wagmi';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import Image from 'next/image';
+import { toast } from 'react-toastify';
 
 const stHSKAddress = '0x81f4B01E26707Edbaf2168Ed4E20C17f8d28fd8F';
 
-const AddressBar: React.FC = () => {
+export default function AddressBar() {
   const { watchAsset } = useWatchAsset();
+  const { isConnected } = useAccount();
   const [copied, setCopied] = useState(false);
 
   // Reset copied state after 3 seconds
@@ -24,49 +26,72 @@ const AddressBar: React.FC = () => {
     setCopied(true);
   };
 
+  const handleAddToWallet = () => {
+    if (!isConnected) {
+      toast.error("Please connect to a wallet to add watch the token");
+      return;
+    }
+
+    watchAsset({
+      type: 'ERC20',
+      options: {
+        address: stHSKAddress,
+        symbol: 'stHSK',
+        decimals: 18,
+      },
+    });
+  };
+
   return (
-    <div className="flex items-center space-x-4 bg-gray-800 p-4 rounded-lg shadow-md">
-      <span className="text-white font-mono">{stHSKAddress}</span>
-      <CopyToClipboard text={stHSKAddress} onCopy={handleCopy}>
-        <div className="relative group">
-          <div className="p-1 rounded-md hover:bg-gray-700 transition-colors">
-            <Image
-              src={copied ? "/tick-circle.png" : "/copy.png"}
-              width={24}
-              height={24}
-              className="cursor-pointer"
-            />
+    <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 transition-all hover:border-primary/30 hover:bg-slate-800/80 text-left">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-3">
+            <svg className="w-4 h-4 text-primary/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
           </div>
-          <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:inline bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-            {copied ? "Copied" : "Copy"}
-          </span>
+          <div className="text-left">
+            <h3 className="text-sm font-medium text-slate-300 mb-1">stHSK Token Address</h3>
+            <p className="text-xs text-slate-400 font-mono">{stHSKAddress}</p>
+          </div>
         </div>
-      </CopyToClipboard>
-      <div className="relative group">
-        <div className="p-1 rounded-md hover:bg-gray-700 transition-colors">
-          <Image
-            src="/wallet.png"
-            width={24}
-            height={24}
-            className="cursor-pointer"
-            onClick={() =>
-              watchAsset({
-                type: 'ERC20',
-                options: {
-                  address: stHSKAddress,
-                  symbol: 'stHSK',
-                  decimals: 18,
-                },
-              })
-            }
-          />
+        
+        <div className="flex items-center space-x-2">
+          <CopyToClipboard text={stHSKAddress} onCopy={handleCopy}>
+            <div className="relative group">
+              <div className="p-1 rounded-md hover:bg-gray-700 transition-colors">
+                <Image
+                  src={copied ? "/tick-circle.png" : "/copy.png"}
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="cursor-pointer"
+                />
+              </div>
+              <span className="absolute bottom-full right-0 mb-1 hidden group-hover:inline bg-slate-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap border border-slate-700">
+                {copied ? "Copied" : "Copy"}
+              </span>
+            </div>
+          </CopyToClipboard>
+          
+          <div className="relative group">
+            <div className="p-1 rounded-md hover:bg-gray-700 transition-colors">
+              <Image
+                src="/wallet.png"
+                alt=""
+                width={24}
+                height={24}
+                className="cursor-pointer"
+                onClick={handleAddToWallet}
+              />
+            </div>
+            <span className="absolute bottom-full right-0 mb-1 hidden group-hover:inline bg-slate-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap border border-slate-700">
+              Add to Wallet
+            </span>
+          </div>
         </div>
-        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:inline bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-          Add to Wallet
-        </span>
       </div>
     </div>
   );
-};
-
-export default AddressBar; 
+} 

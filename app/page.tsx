@@ -322,11 +322,6 @@ export default function Home() {
   return (
     <MainLayout>
       <div className="min-h-screen text-white">
-        {/* Add the AddressBar component here */}
-        <div className="container mx-auto px-4 py-4">
-          <AddressBar />
-        </div>
-
         {/* Hero Section */}
         <div className="container mx-auto px-4 pt-16 pb-24">
           <div className="text-center mb-16">
@@ -346,6 +341,13 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </Link>
+            </div>
+            
+            {/* AddressBar component placed here */}
+            <div className="mt-10 flex justify-center">
+              <div className="w-full max-w-2xl">
+                <AddressBar />
+              </div>
             </div>
           </div>
           

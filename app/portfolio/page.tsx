@@ -493,11 +493,6 @@ export default function PortfolioPage() {
           </div>
         </div>
       )}
-
-      {/* Add the AddressBar component here */}
-      <div className="container mx-auto px-4 py-4">
-        <AddressBar />
-      </div>
     </MainLayout>
   );
 }
