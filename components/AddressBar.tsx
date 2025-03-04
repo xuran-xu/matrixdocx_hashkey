@@ -4,7 +4,9 @@ import { CopyToClipboard } from 'react-copy-to-clipboard';
 import Image from 'next/image';
 import { toast } from 'react-toastify';
 
-const stHSKAddress = '0x81f4B01E26707Edbaf2168Ed4E20C17f8d28fd8F';
+
+// mainnet stHSK address
+const stHSKAddress = '0x0068418bAE51127Fc3e0331274De5CB9CaD337E7';
 
 export default function AddressBar() {
   const { watchAsset } = useWatchAsset();
