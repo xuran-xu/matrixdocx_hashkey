@@ -10,6 +10,7 @@ import { useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Image from 'next/image';
+import AddressBar from '../components/AddressBar';
 
 export default function Home() {
   // 添加本地loading状态，初始为true
@@ -321,6 +322,11 @@ export default function Home() {
   return (
     <MainLayout>
       <div className="min-h-screen text-white">
+        {/* Add the AddressBar component here */}
+        <div className="container mx-auto px-4 py-4">
+          <AddressBar />
+        </div>
+
         {/* Hero Section */}
         <div className="container mx-auto px-4 pt-16 pb-24">
           <div className="text-center mb-16">

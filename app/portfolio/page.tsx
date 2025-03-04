@@ -8,6 +8,7 @@ import { formatBigInt } from '@/utils/format';
 import { useUnstakeLocked, useUserStakingInfo, batchGetStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { getContractAddresses } from '@/config/contracts';
 import { toast } from 'react-toastify';
+import AddressBar from '../../components/AddressBar';
 // import StakingHistory from '@/components/StakingHistory';
 
 export default function PortfolioPage() {
@@ -492,6 +493,11 @@ export default function PortfolioPage() {
           </div>
         </div>
       )}
+
+      {/* Add the AddressBar component here */}
+      <div className="container mx-auto px-4 py-4">
+        <AddressBar />
+      </div>
     </MainLayout>
   );
 }
