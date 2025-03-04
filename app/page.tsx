@@ -10,7 +10,7 @@ import { useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Image from 'next/image';
-import AddressBar from '../components/AddressBar';
+import AddressBar from '@/components/AddressBar';
 
 export default function Home() {
   // 添加本地loading状态，初始为true
