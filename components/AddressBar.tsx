@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 
 
 // mainnet stHSK address
-const stHSKAddress = '0x0068418bAE51127Fc3e0331274De5CB9CaD337E7';
+const stHSKAddress = '0x2Ea2F4cbD74840f4ac6C65887ca2986c715d7193';
 
 export default function AddressBar() {
   const { watchAsset } = useWatchAsset();
