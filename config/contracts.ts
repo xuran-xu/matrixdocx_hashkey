@@ -1,6 +1,6 @@
 export const contractAddresses = {
     133: {
-      stakingContract: '0x6b126ad5F9Cd3CeD2A7A8CEB5153d475BeE574c4' as `0x${string}`,
+      stakingContract: '0x001C45CBd475F43193d08760A33ee950a2F7aa74' as `0x${string}`,
       stHSKToken: '0x' as `0x${string}`,
     },
     177: {
@@ -10,7 +10,7 @@ export const contractAddresses = {
   };
   
   // 根据环境变量确定默认链ID
-  export const defaultChainId = 177
+  export const defaultChainId = 133
   
   export const getContractAddresses = (chainId: number) => {
     return contractAddresses[chainId as keyof typeof contractAddresses] || 

@@ -21,6 +21,45 @@ export const HashKeyChainStakingABI = [
     outputs: [{ type: "uint256" }]
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_stakeId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getStakeReward",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "originalAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "reward",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualReward",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalValue",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     name: "getUserActiveLockedStakes",
     type: "function",
     stateMutability: "view",
@@ -185,7 +224,41 @@ export const HashKeyChainStakingABI = [
       { indexed: false, name: "penalty", type: "uint256" },
       { indexed: false, name: "stakeId", type: "uint256" }
     ]
-  }
+  },
+  {
+    "inputs": [],
+    "name": "getRewardStatus",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "totalPooled",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalShares",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalPaid",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "reserved",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "contractBalance",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+
 ];
 
 export const StHSKABI = [
