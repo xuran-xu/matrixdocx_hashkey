@@ -79,8 +79,9 @@ export default function PortfolioPage() {
       // 计算总确认收益仅供参考
       const confirmedTotalReward = stakesInfo
         .filter(info => !info.error && !info.isWithdrawn)
+        // .reduce((sum, info) => sum + info.actualReward, BigInt(0));
         .reduce((sum, info) => sum + (info.currentHskValue - info.hskAmount), BigInt(0));
-      
+
       setTotalRewards(confirmedTotalReward);
       
       // 转换为所需格式 - 包括所有质押，包括已提取的
@@ -94,7 +95,8 @@ export default function PortfolioPage() {
             currentHskValue: info.currentHskValue,
             lockEndTime: info.lockEndTime,
             isWithdrawn: info.isWithdrawn,
-            isLocked: info.isLocked
+            isLocked: info.isLocked,
+            actualReward: info.actualReward
           }
         }));
       
@@ -297,7 +299,7 @@ export default function PortfolioPage() {
                     <span className="inline-block w-24 h-7 bg-slate-700 rounded animate-pulse"></span>
                   ) : (
                     <>
-                      +{formatBigInt(totalRewards)} HSK
+                      +{formatBigInt(totalRewards, 18, 4)} HSK
                     </>
                   )}
                 </p>
@@ -313,15 +315,23 @@ export default function PortfolioPage() {
                 {[1, 2].map((i) => (
                   <div key={i} className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 animate-pulse">
                     <div className="flex flex-wrap justify-between mb-4">
-                      <div className="mb-4 w-1/3">
+                      <div className="mb-4 w-1/5">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
-                      <div className="mb-4 w-1/3">
+                      <div className="mb-4 w-1/5">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
-                      <div className="mb-4 w-1/3">
+                      <div className="mb-4 w-1/5">
+                        <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
+                        <div className="h-7 bg-slate-700 rounded w-24"></div>
+                      </div>
+                      <div className="mb-4 w-1/5">
+                        <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
+                        <div className="h-7 bg-slate-700 rounded w-24"></div>
+                      </div>
+                      <div className="mb-4 w-1/5">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
@@ -363,6 +373,13 @@ export default function PortfolioPage() {
                         </p>
                       </div>
                       
+                      <div className="w-full sm:w-auto mb-4 sm:mb-0 sm:mx-4">
+                        <p className="text-sm text-slate-400 mb-1">Actual Reward</p>
+                        <p className="text-xl font-medium text-green-500">
+                          {formatBigInt(position.info.actualReward, 18, 4)} HSK
+                        </p>
+                      </div>
+                      
                       <div className="w-full sm:w-auto mb-4 sm:mb-0">
                         <p className="text-sm text-slate-400 mb-1">APY</p>
                         <p className="text-xl font-medium text-green-500">
@@ -385,7 +402,6 @@ export default function PortfolioPage() {
                     
                     {!position.info.isWithdrawn && (
                       <div className="flex justify-end">
-                        {!position.info.isLocked ? (
                           <button
                             onClick={() => handleUnstakeClick(position.id)}
                             disabled={processingStakeId === position.id}
@@ -405,11 +421,7 @@ export default function PortfolioPage() {
                               </>
                             )}
                           </button>
-                        ) : (
-                          <div className="text-sm text-slate-400">
-                            Available after lock period ends
-                          </div>
-                        )}
+                        
                       </div>
                     )}
                   </div>

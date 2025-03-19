@@ -12,6 +12,8 @@ export interface LockedStakeInfo {
     lockEndTime: bigint;
     isWithdrawn: boolean;
     isLocked: boolean;
+    reward?: bigint;
+    actualReward?: bigint;
 }
   
 export interface StakingStats {

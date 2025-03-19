@@ -1,6 +1,6 @@
 'use client';
 
-import { useAccount, useWriteContract, useChainId, usePublicClient, useWalletClient, useContractWrite } from 'wagmi';
+import { useAccount, useWriteContract, useChainId, usePublicClient } from 'wagmi';
 import { getContractAddresses } from '@/config/contracts';
 import { StakeType, StakingStats } from '@/types/contracts';
 import { parseEther } from '@/utils/format';
@@ -8,6 +8,7 @@ import { HashKeyChainStakingABI } from '@/constants/abi';
 import { useState, useEffect } from 'react';
 import { waitForTransactionReceipt, writeContract } from 'wagmi/actions';
 import { config } from '@/app/providers';
+import { PublicClient } from 'viem';
 
 export const stakeTypeMap = {
   "30days": 0,  // FIXED_30_DAYS
@@ -251,7 +252,7 @@ export function useUnstakeLocked() {
         functionName: 'unstakeLocked',
         args: [BigInt(stakeId)]
       });
-      
+
       console.log('Unstake transaction submitted:', tx);
       
       // 等待交易确认
@@ -318,7 +319,7 @@ export function useLockedStakeInfo(stakeId: number | null) {
       try {
         // 调用合约获取锁定质押信息
         const stakeInfo = await publicClient.readContract({
-          address: contractAddress,
+          address: contractAddress as `0x${string}`,
           abi: HashKeyChainStakingABI,
           functionName: 'getLockedStakeInfo',
           args: [address, BigInt(stakeId)]
@@ -354,8 +355,69 @@ export function useLockedStakeInfo(stakeId: number | null) {
   return data;
 }
 
+// 获取质押奖励信息
+export function useStakeReward(stakeId: number | null) {
+  const chainId = useChainId();
+  const contractAddress = getContractAddresses(chainId).stakingContract;
+  const publicClient = usePublicClient();
+  const { address } = useAccount();
+  
+  const [data, setData] = useState<{
+    originalAmount: bigint;
+    reward: bigint;
+    actualReward: bigint;
+    totalValue: bigint;
+    isLoading: boolean;
+    error: Error | null;
+  }>({
+    originalAmount: BigInt(0),
+    reward: BigInt(0),
+    actualReward: BigInt(0),
+    totalValue: BigInt(0),
+    isLoading: false,
+    error: null
+  });
+  
+  useEffect(() => {
+    if (!publicClient || !contractAddress || !address || stakeId === null) return;
+    
+    const fetchStakeReward = async () => {
+      setData(prev => ({ ...prev, isLoading: true, error: null }));
+      try {
+        // 调用合约获取质押奖励信息
+        const rewardInfo = await publicClient.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: HashKeyChainStakingABI,
+          functionName: 'getStakeReward',
+          args: [address, BigInt(stakeId)]
+        }) as [bigint, bigint, bigint, bigint];
+        
+        setData({
+          originalAmount: rewardInfo[0],
+          reward: rewardInfo[1],
+          actualReward: rewardInfo[2],
+          totalValue: rewardInfo[3],
+          isLoading: false,
+          error: null
+        });
+      } catch (error) {
+        console.error('获取质押奖励信息失败:', error);
+        setData(prev => ({ 
+          ...prev, 
+          isLoading: false, 
+          error: error instanceof Error ? error : new Error('获取质押奖励信息失败') 
+        }));
+      }
+    };
+    
+    fetchStakeReward();
+  }, [publicClient, contractAddress, address, stakeId]);
+  
+  return data;
+}
+
 // 根据 ABI 修改 batchGetStakingInfo 函数
-export async function batchGetStakingInfo(contractAddress: string, publicClient: any, stakeIds: number[], userAddress: string) {
+export async function batchGetStakingInfo(contractAddress: string, publicClient: PublicClient, stakeIds: number[], userAddress: string) {
   const results = [];
   
   for (const id of stakeIds) {
@@ -363,11 +425,19 @@ export async function batchGetStakingInfo(contractAddress: string, publicClient:
       // 获取锁定质押信息，返回值格式：
       // sharesAmount, hskAmount, currentHskValue, lockEndTime, isWithdrawn, isLocked
       const stakeInfo = await publicClient.readContract({
-        address: contractAddress,
+        address: contractAddress as `0x${string}`,
         abi: HashKeyChainStakingABI,
         functionName: 'getLockedStakeInfo',
         args: [userAddress, BigInt(id)]
       }) as [bigint, bigint, bigint, bigint, boolean, boolean];
+      
+      // 获取质押奖励信息
+      const rewardInfo = await publicClient.readContract({
+        address: contractAddress as `0x${string}`,
+        abi: HashKeyChainStakingABI,
+        functionName: 'getStakeReward',
+        args: [userAddress, BigInt(id)]
+      }) as [bigint, bigint, bigint, bigint];
       
       // 收益 = 当前价值 - 初始质押金额
       const reward = stakeInfo[2] - stakeInfo[1];
@@ -381,6 +451,7 @@ export async function batchGetStakingInfo(contractAddress: string, publicClient:
         isWithdrawn: stakeInfo[4],     // 是否已提取
         isLocked: stakeInfo[5],        // 是否仍在锁定
         reward: reward,                // 计算的收益
+        actualReward: rewardInfo[2],   // 实际奖励
         error: null
       });
     } catch (error) {
@@ -394,6 +465,7 @@ export async function batchGetStakingInfo(contractAddress: string, publicClient:
         isWithdrawn: false,
         isLocked: false,
         reward: BigInt(0),
+        actualReward: BigInt(0),
         error: error
       });
     }
