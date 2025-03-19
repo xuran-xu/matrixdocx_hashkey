@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Image from 'next/image';
 import AddressBar from '@/components/AddressBar';
+import StartStake from '@/components/app/StartStake';
 
 export default function Home() {
   // 添加本地loading状态，初始为true
@@ -331,7 +332,8 @@ export default function Home() {
             </p>
             
             {/* Call to action button */}
-            <div className="mt-10">
+            <StartStake />
+            {/* <div className="mt-10">
               <Link 
                 href="/stake" 
                 className="inline-flex items-center px-8 py-4 rounded-xl bg-primary/80 text-white hover:bg-primary transition-colors text-lg font-medium shadow-lg hover:shadow-xl"
@@ -341,7 +343,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </Link>
-            </div>
+            </div> */}
             
             {/* AddressBar component placed here */}
             {/* <div className="mt-10 flex justify-center">
