@@ -316,7 +316,7 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
                     <span>{progressStep + (isStakeSuccess ? 1 : 0)} / {activeLockedStakes + 1}</span>
                   </div>
                   <progress
-                    className="progress progress-primary w-full h-3 bg-slate-700/50"
+                    className="progress progress-success w-full h-3 bg-slate-700/50"
                     value={progressStep + (isStakeSuccess ? 1 : 0)}
                     max={activeLockedStakes + 1}
                   />
