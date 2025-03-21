@@ -1,5 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useState, useEffect } from 'react';
 import { StakeType } from '@/types/contracts';
+import { useAllStakingAPRs } from '@/hooks/useStakingContracts';
 
 interface ModalProps {
   activeLockedStakes: number;
@@ -35,31 +36,58 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
   const [processFunction, setProcessFunction] = useState<ProcessFunction | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const stakingOptions = [
-    {
-      title: '30 Day Lock',
-      duration: 30,
-      type: StakeType.FIXED_30_DAYS,
-    },
-    {
-      title: '90 Day Lock',
-      duration: 90,
-      type: StakeType.FIXED_90_DAYS,
-    },
-    {
-      title: '180 Day Lock',
-      duration: 180,
-      type: StakeType.FIXED_180_DAYS,
-    },
-    {
-      title: '365 Day Lock',
-      duration: 365,
-      type: StakeType.FIXED_365_DAYS,
-    },
-  ];
+  // 使用 useAllStakingAPRs 钩子动态获取 APR 数据
+  const { estimatedAPRs, maxAPRs, isLoading: aprsLoading } = useAllStakingAPRs('1000'); // 金额可根据需求调整
+
+  // 动态生成 stakingOptions
+  const stakingOptions = React.useMemo(() => {
+    if (aprsLoading || !estimatedAPRs || !maxAPRs) {
+      return [];
+    }
+
+    const apr30 = Number(estimatedAPRs[0] || BigInt(0)) / 100;
+    const apr90 = Number(estimatedAPRs[1] || BigInt(0)) / 100;
+    const apr180 = Number(estimatedAPRs[2] || BigInt(0)) / 100;
+    const apr365 = Number(estimatedAPRs[3] || BigInt(0)) / 100;
+    const maxApr30 = Number(maxAPRs[0] || BigInt(0)) / 100;
+    const maxApr90 = Number(maxAPRs[1] || BigInt(0)) / 100;
+    const maxApr180 = Number(maxAPRs[2] || BigInt(0)) / 100;
+    const maxApr365 = Number(maxAPRs[3] || BigInt(0)) / 100;
+
+    return [
+      {
+        title: '30 Day Lock',
+        duration: 30,
+        type: StakeType.FIXED_30_DAYS,
+        currentAPR: apr30,
+        maxAPR: maxApr30,
+      },
+      {
+        title: '90 Day Lock',
+        duration: 90,
+        type: StakeType.FIXED_90_DAYS,
+        currentAPR: apr90,
+        maxAPR: maxApr90,
+      },
+      {
+        title: '180 Day Lock',
+        duration: 180,
+        type: StakeType.FIXED_180_DAYS,
+        currentAPR: apr180,
+        maxAPR: maxApr180,
+      },
+      {
+        title: '365 Day Lock',
+        duration: 365,
+        type: StakeType.FIXED_365_DAYS,
+        currentAPR: apr365,
+        maxAPR: maxApr365,
+      },
+    ];
+  }, [estimatedAPRs, maxAPRs, aprsLoading]);
 
   const handleUpgrade = async () => {
-    if (!selectedStakeType || !processFunction) return;
+    if (selectedStakeType == null || !processFunction) return;
     setIsProcessing(true);
     try {
       const processResult = await processFunction(selectedStakeType);
@@ -187,7 +215,9 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
                     <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>Enhanced profits (total profits increased by 60%)</span>
+                    <span>Enhanced profits (total profits increased by 
+                      <span className='text-xl font-light tracking-tight text-green-500'> 60%</span> )
+                    </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,41 +228,52 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
                 </ul>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  {stakingOptions.map((option) => (
-                    <button
-                      key={option.type}
-                      onClick={() => setSelectedStakeType(option.type)}
-                      className={`p-6 rounded-xl border ${
-                        selectedStakeType === option.type
-                          ? 'border-primary bg-primary/20 ring-4 ring-primary/30'
-                          : 'border-slate-700 hover:border-primary/50 bg-slate-800/30'
-                      } transition-all text-left`}
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="text-xl font-medium text-white">{option.title}</div>
-                          <div className="text-sm text-slate-400 mt-1">Lock period: {option.duration} days</div>
-                        </div>
-                        {selectedStakeType === option.type && (
-                          <div className="bg-primary rounded-full p-1">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
+                  {aprsLoading ? (
+                    <div className="text-center text-slate-400 col-span-2">Loading APR data...</div>
+                  ) : stakingOptions.length === 0 ? (
+                    <div className="text-center text-red-500 col-span-2">Error loading APR data</div>
+                  ) : (
+                    stakingOptions.map((option) => (
+                      <button
+                        key={option.type}
+                        onClick={() => setSelectedStakeType(option.type)}
+                        className={`p-6 rounded-xl border ${
+                          selectedStakeType === option.type
+                            ? 'border-primary bg-primary/20 ring-4 ring-primary/30'
+                            : 'border-slate-700 hover:border-primary/50 bg-slate-800/30'
+                        } transition-all text-left`}
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <div className="text-xl font-medium text-white">{option.title}</div>
+                            <div className="text-sm text-slate-400 mt-1">Lock period: {option.duration} days</div>
                           </div>
-                        )}
-                      </div>
-                      <div className="text-sm text-slate-300">
-                        • Enhanced rewards distribution<br />
-                        • Early withdrawal available<br />
-                        • Automatic compounding
-                      </div>
-                    </button>
-                  ))}
+                          {selectedStakeType === option.type && (
+                            <div className="bg-primary rounded-full p-1">
+                              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Current APR</span>
+                            <span className="text-cyan-400 font-medium text-xl">{option.currentAPR.toFixed(2)}%</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Max APR</span>
+                            <span className="text-cyan-400 font-medium text-xl">{option.maxAPR.toFixed(2)}%</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
 
                 <button
                   onClick={handleUpgrade}
-                  disabled={!selectedStakeType}
+                  disabled={selectedStakeType == null || aprsLoading}
                   className="w-full px-6 py-4 rounded-xl bg-primary/80 hover:bg-primary text-white text-lg font-medium transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
                 >
                   Upgrade Stakes
@@ -257,7 +298,9 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
                     <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>Enhanced profits (total profits increased by 60%)</span>
+                    <span>Enhanced profits (total profits increased by 
+                      <span className='text-xl font-light tracking-tight text-green-500'> 60%</span> )
+                    </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

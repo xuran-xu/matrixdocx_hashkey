@@ -54,9 +54,13 @@ export default function StartStake() {
             className="inline-flex items-center px-8 py-4 rounded-xl bg-primary/80 text-white hover:bg-primary transition-colors text-lg font-medium shadow-lg hover:shadow-xl cursor-pointer"
           >
             One-click profit increases
-            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg> 
+            <svg className="w-5 h-5 ml-2 coin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12l3-3 3 3 3-3 3 3 3-3 3 3" />
+              <path d="M3 12v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8" />
+              <circle cx="10" cy="6" r="1" className="coin coin-1" fill="gold" />
+              <circle cx="12" cy="6" r="1" className="coin coin-2" fill="gold" />
+              <circle cx="14" cy="6" r="1" className="coin coin-3" fill="gold" />
+            </svg>
           </div>
         ) : (
           <Link 
@@ -64,8 +68,12 @@ export default function StartStake() {
             className="inline-flex items-center px-8 py-4 rounded-xl bg-primary/80 text-white hover:bg-primary transition-colors text-lg font-medium shadow-lg hover:shadow-xl"
           >
             Start Staking
-            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            <svg className="w-5 h-5 ml-2 coin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12l3-3 3 3 3-3 3 3 3-3 3 3" />
+              <path d="M3 12v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8" />
+              <circle cx="10" cy="6" r="1" className="coin coin-1" fill="gold" />
+              <circle cx="12" cy="6" r="1" className="coin coin-2" fill="gold" />
+              <circle cx="14" cy="6" r="1" className="coin coin-3" fill="gold" />
             </svg>
           </Link>
         )}

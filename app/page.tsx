@@ -441,7 +441,7 @@ export default function Home() {
               ) : (
                 <div className="flex items-baseline gap-2">
                   <span className="text-lg font-light text-slate-400">Up to</span>
-                  <span className="text-3xl font-light tracking-tight text-green-500">36</span>
+                  <span className="text-4xl font-light tracking-tight text-green-500">36</span>
                   <span className="text-lg font-light text-slate-400">%</span>
                 </div>
               )}
@@ -493,7 +493,7 @@ export default function Home() {
                   
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Current APR</span>
-                    <span className="text-white font-medium">{option.apr.toFixed(2)}%</span>
+                    <span className="text-cyan-400 font-medium text-xl">{option.apr.toFixed(2)}%</span>
                   </div>
                   
                   {/* <div className="flex justify-between items-center">
@@ -506,8 +506,8 @@ export default function Home() {
                   </div> */}
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-400">Max APR</span>
-                    <span className="text-white font-medium">{option.maxApr.toFixed(2)}%</span>
+                    <span className="text-slate-400 ">Max APR</span>
+                    <span className="text-cyan-400 font-medium text-xl">{option.maxApr.toFixed(2)}%</span>
                   </div>
                 </div>
                 
