@@ -29,7 +29,8 @@ export default function StartStake() {
       console.log(result, 'startbatchUnstake completed');
       // 这里如果成功继续搞新的
       // 如果失败，则那条会有重试功能
-      const amount = formatEther(result?.totalStaked);
+      // @ts-ignore
+      const amount = formatEther(result!.totalStaked);
       console.log(amount, 'amount amountamountamountamountamount');
       console.log(stakeTypeNumber, ' stakeTypeNumber ');
       const isStakeSuccess = await stakeLocked(amount, stakeTypeNumber);
