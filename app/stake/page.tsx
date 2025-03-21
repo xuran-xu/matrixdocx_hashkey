@@ -5,6 +5,7 @@ import MainLayout from '../main-layout';
 import { StakeType } from '@/types/contracts';
 import { useAccount, useBalance } from 'wagmi';
 import { useStakeLocked, useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
+import { useStakeFlexible } from '@/hooks/useFlexibleStaking';
 import { toast } from 'react-toastify';
 import { formatEther } from 'viem';
 import Link from 'next/link';
@@ -29,6 +30,12 @@ export default function StakePage() {
     isPending,
     isConfirming,
   } = useStakeLocked();
+
+  const { 
+    stakeFlexible,
+    isPending: isFlexiblePending,
+    isConfirming: isFlexibleConfirming,
+  } = useStakeFlexible();
   
   // State to track selected duration and transaction status
   const [selectedDays, setSelectedDays] = useState(30);
@@ -61,6 +68,9 @@ export default function StakePage() {
           break;
         case StakeType.FIXED_365_DAYS:
           setSelectedDays(365);
+          break;
+        case StakeType.FLEXIBLE:
+          setSelectedDays(0);
           break;
         default:
           // 默认选择30天
@@ -98,12 +108,13 @@ export default function StakePage() {
       const apr90 = Number(estimatedAPRs[1] || BigInt(0)) / 100;
       const apr180 = Number(estimatedAPRs[2] || BigInt(0)) / 100;
       const apr365 = Number(estimatedAPRs[3] || BigInt(0)) / 100;
-      
+      const aprFlexible = Number(estimatedAPRs[4] || BigInt(0)) / 100;
+
       const maxApr30 = Number(maxAPRs[0] || BigInt(0)) / 100;
       const maxApr90 = Number(maxAPRs[1] || BigInt(0)) / 100;
       const maxApr180 = Number(maxAPRs[2] || BigInt(0)) / 100;
       const maxApr365 = Number(maxAPRs[3] || BigInt(0)) / 100;
-      
+      const maxAprFlexible = Number(maxAPRs[4] || BigInt(0)) / 100;
       // 硬编码的bonus值，按照图片中显示的数值
       const bonus30 = 0.00;  // 30天锁定期：+0.00%
       const bonus90 = 0.80;  // 90天锁定期：+0.80%
@@ -118,6 +129,15 @@ export default function StakePage() {
       });
       
       return [
+        {
+          title: 'Flexible',
+          duration: 0,
+          durationDisplay: 'Flexible',
+          apr: aprFlexible,
+          bonus: bonus30,
+          maxApr: maxAprFlexible,
+          stakeType: StakeType.FLEXIBLE
+        },
         {
           title: '30 Day Lock',
           duration: 30,
@@ -179,7 +199,7 @@ export default function StakePage() {
       case 365:
         return StakeType.FIXED_365_DAYS;
       default:
-        return StakeType.FIXED_30_DAYS;
+        return StakeType.FLEXIBLE;
     }
   };
   
@@ -209,8 +229,14 @@ export default function StakePage() {
         stakeType: stakeTypeNumber,
         typeOf: typeof stakeTypeNumber
       });
-      
-      const success = await stakeLocked(amount, stakeTypeNumber);
+      let success = false;
+      if (stakeTypeNumber === StakeType.FLEXIBLE) {
+        // 如果是灵活质押，使用stake方法
+        success = await stakeFlexible(amount);
+      } else {
+        // 如果是固定质押，使用stakeLocked方法  
+        success = await stakeLocked(amount, stakeTypeNumber);
+      }
       
       if (success) {
         toast.success('Staking transaction confirmed successfully');
@@ -308,7 +334,7 @@ export default function StakePage() {
                       <span className="mx-2 text-slate-500">|</span>
                       <span className="text-cyan-400 font-medium">APR: </span>
                       <span className="text-cyan-300 font-semibold">{stakingOptions.find(opt => opt.duration === selectedDays)?.apr.toFixed(2) || '0.00'}%</span>
-                      <span className="mx-2 text-slate-500">|</span>
+                      {/* <span className="mx-2 text-slate-500">|</span>
                       <span className="text-cyan-400 font-medium">Lock Reward: </span>
                       {(stakingOptions.find(opt => opt.duration === selectedDays)?.bonus || 0) > 0 ? (
                         <span className="text-emerald-300 font-semibold">
@@ -316,7 +342,7 @@ export default function StakePage() {
                         </span>
                       ) : (
                         <span className="text-slate-300">0.00%</span>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 )}
@@ -324,10 +350,10 @@ export default function StakePage() {
                 <h2 className="text-2xl font-light text-white mb-6">Select Lock Period</h2>
                 
                 {/* Lock period selection grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mb-8">
                   {statsLoading || aprsLoading ? (
                     // Skeleton loading state
-                    Array(4).fill(0).map((_, index) => (
+                    Array(5).fill(0).map((_, index) => (
                       <div key={index} className="p-6 rounded-lg border border-slate-700 bg-slate-800/30 animate-pulse">
                         <div className="h-6 bg-slate-700 rounded mb-4 w-3/4"></div>
                         <div className="h-4 bg-slate-700 rounded mb-2 w-full"></div>
@@ -370,7 +396,7 @@ export default function StakePage() {
                             {option.apr.toFixed(2)}%
                           </div>
                         </div>
-                        <div className="flex justify-between items-start">
+                        {/* <div className="flex justify-between items-start">
                           <div className={`text-sm ${selectedDays === option.duration ? 'text-cyan-400 font-medium' : 'text-slate-400'}`}>Bonus</div>
                           {option.bonus > 0 ? (
                             <div className="text-right">
@@ -382,7 +408,7 @@ export default function StakePage() {
                           ) : (
                             <div className={`text-lg ${selectedDays === option.duration ? 'text-slate-300' : 'text-slate-500'}`}>0.00%</div>
                           )}
-                        </div>
+                        </div> */}
                         {option.maxApr > option.apr && (
                           <div className={`mt-2 text-xs font-medium ${selectedDays === option.duration ? 'text-emerald-300' : 'text-emerald-400'}`}>
                             Up to {option.maxApr.toFixed(2)}% APR

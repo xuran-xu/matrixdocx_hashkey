@@ -2,19 +2,26 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useBatchUnstakeLocked, useUserStakingInfo } from '@/hooks/useOldStakingContracts';
-import { useStake } from '@/hooks/useStakingContracts';
+import { useStakeLocked, useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import Modal from './StakeModal';
+import { StakeType } from '@/types/contracts';
+import { formatEther } from 'viem';
 
 export default function StartStake() {
   // check user is staked is active
   const { activeLockedStakes } = useUserStakingInfo();
   const { startbatchUnstake, progress } = useBatchUnstakeLocked();
-  const { stake } = useStake();
   const { address } = useAccount();
   const modalRef = useRef<{ openModal: (fn: any) => void }>(null);
   const [isStakeSuccess, setIsStakeSuccess] = useState(false);
+  const { 
+    stakeLocked, 
+    isPending,
+    isConfirming,
+  } = useStakeLocked();
+
   // 一键提取 并且 质押新的
-  const unStakeAllAndNewStake = async () => {
+  const unStakeAllAndNewStake = async (stakeTypeNumber: StakeType) => {
     try {
       setIsStakeSuccess(false);
       // Remove progress watcher and manual updates
@@ -22,9 +29,10 @@ export default function StartStake() {
       console.log(result, 'startbatchUnstake completed');
       // 这里如果成功继续搞新的
       // 如果失败，则那条会有重试功能
-      const amount = result?.totalStaked;
+      const amount = formatEther(result?.totalStaked);
       console.log(amount, 'amount amountamountamountamountamount');
-      const isStakeSuccess = await stake(amount);
+      console.log(stakeTypeNumber, ' stakeTypeNumber ');
+      const isStakeSuccess = await stakeLocked(amount, stakeTypeNumber);
       console.log(isStakeSuccess, 'isStakeSuccess isStakeSuccess');
       setIsStakeSuccess(true);
       return isStakeSuccess;
@@ -65,39 +73,3 @@ export default function StartStake() {
     </>
   );
 }
-
-// nextjs 和 daisyui V5 实现 Modal
- 
-// 这是文案
-// - 原质押HSK可以获取收益（即使未到期也可以领取收益）
-// - 增强收益（总收益增加60%）
-// - 原长期直接转为灵活质押（仍保持获取收益）
-
-// 补充一下描述：
-// 点击按钮，直接执行，同时打开 Modal
-
-// 原先有一条或者多条质押记录，
-// 大部分用户是一条，少部分用户是多条，最多可能有14条
-// 确保都成功解除质押，最后再质押到新的合约
-// 如果失败，则那条会有重试功能。
-
-// 希望用户可以看到进度条，防止提前关闭。
-// 如果进度没完成，提前关闭弹窗需要二次确认
-// 样式要优美，符合 https://www.hskhodlium.xyz/ 的主题样式
-
-// 这是我的按钮 
-// <div 
-// onClick={() => {
-//   unStakeAllAndNewStake();
-// }}
-// className="inline-flex items-center px-8 py-4 rounded-xl bg-primary/80 text-white hover:bg-primary transition-colors text-lg font-medium shadow-lg hover:shadow-xl cursor-pointer"
-// >
-// {/* {activeLockedStakes} */}
-// One-click profit increases
- 
-// </div>
-//   const unStakeAllAndNewStake = async() => {
-//     // 先解锁所有旧的 再质押新的
-//     const totalStaked = await startbatchUnstake();
-//     console.log(totalStaked, 'startbatchUnstake data');
-//   }

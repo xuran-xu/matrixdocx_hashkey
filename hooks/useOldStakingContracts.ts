@@ -17,7 +17,7 @@ export const stakeTypeMap = {
 };
 
 // 获取质押合约的基本信息
-export function useStakingInfo(simulatedAmount: string = '1000') {
+export function useOldStakingInfo(simulatedAmount: string = '1000') {
   const chainId = useChainId();
   const contractAddress = getContractAddresses(chainId).stakingOldContract;
   const simulatedAmountWei = parseEther(simulatedAmount || '0');
@@ -52,43 +52,40 @@ export function useStakingInfo(simulatedAmount: string = '1000') {
           abi: HashKeyChainStakingABI,
           functionName: 'totalValueLocked',
         });
+        console.log('old totalValueLocked', totalValueLocked);
         
         // 获取质押统计信息，传入模拟金额
-        const detailedStakingStats = await publicClient.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: HashKeyChainStakingABI,
-          functionName: 'getDetailedStakingStats',
-          args: [simulatedAmountWei], // 使用模拟金额作为参数
-        });
+        const currentExchangeRate = 0n;
+        const minStakeAmount = 0n;
+        // const detailedStakingStats = await publicClient.readContract({
+        //   address: contractAddress as `0x${string}`,
+        //   abi: HashKeyChainStakingABI,
+        //   functionName: 'getDetailedStakingStats',
+        //   args: [simulatedAmountWei], // 使用模拟金额作为参数
+        // });
         
-        // 获取当前兑换率
-        const currentExchangeRate = await publicClient.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: HashKeyChainStakingABI,
-          functionName: 'getCurrentExchangeRate',
-        });
+        // // 获取当前兑换率
+        // const currentExchangeRate = await publicClient.readContract({
+        //   address: contractAddress as `0x${string}`,
+        //   abi: HashKeyChainStakingABI,
+        //   functionName: 'getCurrentExchangeRate',
+        // });
         
-        // 获取最小质押金额
-        const minStakeAmount = await publicClient.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: HashKeyChainStakingABI,
-          functionName: 'minStakeAmount',
-        });
+        // // 获取最小质押金额
+        // const minStakeAmount = await publicClient.readContract({
+        //   address: contractAddress as `0x${string}`,
+        //   abi: HashKeyChainStakingABI,
+        //   functionName: 'minStakeAmount',
+        // });
         
         setData({
           totalStaked: totalValueLocked as bigint,
-          stakingStats: detailedStakingStats as StakingStats,
+          stakingStats: null,
           exchangeRate: currentExchangeRate as bigint,
           minStakeAmount: minStakeAmount as bigint,
           isLoading: false,
         });
         
-        console.log('Staking info fetched successfully:', {
-          totalValueLocked,
-          detailedStakingStats,
-          currentExchangeRate,
-          minStakeAmount
-        });
       } catch (error) {
         console.error('Failed to fetch staking info:', error);
         setData(prev => ({ ...prev, isLoading: false }));
@@ -595,9 +592,9 @@ const randomResponse = (): Promise<boolean> => {
   return new Promise((resolve) => {
     // 实现思路分三步：
     
-    // 1. 计算随机延迟（500-2000ms）
+    // 1. 计算随机延迟（500-10000ms）
     const min = 500;
-    const max = 20000;
+    const max = 10000;
     const delay = Math.floor(Math.random() * (max - min + 1)) + min;
     
     // 2. 设置延迟定时器

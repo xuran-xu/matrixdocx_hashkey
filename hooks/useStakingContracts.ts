@@ -173,7 +173,6 @@ export function useStake() {
       
       // const _amount = BigInt(amount);
       const _amount = parseEther('100');
-      debugger;
       // 发送交易
       const tx = await writeContract(config, {
         address: contractAddress,
@@ -228,7 +227,10 @@ export function useStakeLocked() {
       setError(null);
       
       const amountWei = parseEther(amount);
-      
+      console.log('Staking locked amount:', amount);
+      console.log('Staking locked stakeType:', stakeType);
+
+      debugger
       // 发送交易
       const tx = await writeContract(config, {
         address: contractAddress,
