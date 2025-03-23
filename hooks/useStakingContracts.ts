@@ -228,9 +228,6 @@ export function useStakeLocked() {
       
       const amountWei = parseEther(amount);
       console.log('Staking locked amount:', amount);
-      console.log('Staking locked stakeType:', stakeType);
-
-      debugger
       // 发送交易
       const tx = await writeContract(config, {
         address: contractAddress,
