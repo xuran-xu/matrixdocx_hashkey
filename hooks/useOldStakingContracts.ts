@@ -4,7 +4,7 @@ import { useAccount, useWriteContract, useChainId, usePublicClient, useWalletCli
 import { getContractAddresses } from '@/config/contracts';
 import { StakeType, StakingStats } from '@/types/contracts';
 import { parseEther } from '@/utils/format';
-import { HashKeyChainStakingABI } from '@/constants/abi';
+import { HashKeyChainStakingABI } from '@/constants/oldAbi';
 import { useState, useEffect } from 'react';
 import { waitForTransactionReceipt, writeContract } from 'wagmi/actions';
 import { config } from '@/app/providers';
@@ -547,7 +547,7 @@ export function useAllStakingAPRs(stakeAmount: string = '1000') {
       setData(prev => ({ ...prev, isLoading: true, error: null }));
       
       try {
-        console.log('Fetching APRs with amount:', stakeAmountWei.toString());
+        console.log('OLd Fetching APRs with amount:', stakeAmountWei.toString());
         
         // 调用getAllStakingAPRs方法获取APR数据
         const result = await publicClient.readContract({
