@@ -464,8 +464,8 @@ export function useBatchUnstakeLocked() {
       // 并行执行所有unstakeLocked操作
       const unstakePromises = stakeIds.map(async (stakeId, index) => {
         try {
-          // const result = await unstakeLocked(stakeId);
-          const result = await randomResponse();
+          const result = await unstakeLocked(stakeId);
+          // const result = await randomResponse();
           // 标记当前任务完成并更新进度
           progressUpdates[index] = true;
           setProgress(prev => prev + 1);
@@ -585,6 +585,59 @@ export function useAllStakingAPRs(stakeAmount: string = '1000') {
   }, [publicClient, contractAddress, stakeAmountWei]);
   
   return data;
+}
+
+// 根据HSK数量获取对应份额（带滑点保护和gas优化）
+export function useGetSharesForHSK(
+  sharesAmount: string,
+  options?: {
+    maxSlippage?: number; // 允许的最大滑点百分比（0-100）
+    gasLimit?: number;     // 自定义gas限制
+  }
+) {
+  const chainId = useChainId();
+  const contractAddress = getContractAddresses(chainId).stakingOldContract;
+  const publicClient = usePublicClient();
+  const sharesAmountWei = parseEther(sharesAmount || '0');
+  
+  const [shares, setShares] = useState<bigint>(BigInt(0));
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchShares = async () => {
+      if (!publicClient || !contractAddress) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const sharesValue = (await publicClient.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: HashKeyChainStakingABI,
+          functionName: 'getHSKForShares',
+          args: [sharesAmountWei],
+        })) as bigint;
+
+        const minExpectedShares = sharesAmountWei - (sharesAmountWei * BigInt(options?.maxSlippage || 0)) / 100n;
+        
+        if (options?.maxSlippage && sharesValue < minExpectedShares) {
+          throw new Error(`滑点超出限制：预期至少 ${minExpectedShares} 份额，实际获得 ${sharesValue}`);
+        }
+        
+        setShares(sharesValue);
+      } catch (err) {
+        console.error('Failed to get shares:', err);
+        setError(err instanceof Error ? err : new Error('Failed to get shares'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchShares();
+  }, [publicClient, contractAddress, sharesAmountWei]);
+
+  return { shares, isLoading, error };
 }
 
 // 临时使用
