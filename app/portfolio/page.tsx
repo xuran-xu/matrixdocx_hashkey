@@ -10,6 +10,7 @@ import { getContractAddresses } from '@/config/contracts';
 import { toast } from 'react-toastify';
 import AddressBar from '../../components/AddressBar';
 import FlexibleStakingPositions from '@/components/portfolio/FlexibleStakingPositions';
+import OldStakingPositions from '@/components/portfolio/OldLockedStakingPositions';
 import { useUserFlexibleStakingInfo } from '@/hooks/useFlexibleStaking';
 
 export default function PortfolioPage() {
@@ -440,6 +441,8 @@ export default function PortfolioPage() {
               setProcessingStakeId={setProcessingStakeId}
               getFlexibleAPR={getFlexibleAPR}
             />
+            {/* 添加老合约质押部分 */}
+            <OldStakingPositions />
           </div>
         </div>
       </div>

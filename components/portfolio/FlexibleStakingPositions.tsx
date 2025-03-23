@@ -146,8 +146,6 @@ const FlexibleStakingPositions: React.FC<FlexibleStakingPositionsProps> = ({
       {/* 显示活跃的 Flexible Stakes */}
       {isLoadingPositions || loadingFlexibleInfo ? (
         <div className="text-center text-slate-400">Loading stakes...</div>
-      ) : flexibleStakedPositions.length === 0 ? (
-        <div className="text-center text-slate-400">No active flexible stakes</div>
       ) : (
         flexibleStakedPositions
           .filter(position => position.info.stakingStatus === FlexibleStakeStatus.ACTIVE)

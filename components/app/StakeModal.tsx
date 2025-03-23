@@ -1,6 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useState, useEffect } from 'react';
 import { StakeType } from '@/types/contracts';
 import { useAllStakingAPRs } from '@/hooks/useStakingContracts';
+import { toast } from 'react-toastify';
 
 interface ModalProps {
   activeLockedStakes: number;
@@ -138,6 +139,11 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
   useEffect(() => {
     if (props.isStakeSuccess && props.progressStep === props.activeLockedStakes) {
       setProcessComplete(true);
+      toast.success('Upgrade successful!');
+      // 2s 后 刷新页面
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     }
   }, [props.isStakeSuccess, props.progressStep, props.activeLockedStakes]);
 
@@ -216,7 +222,7 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <span>Enhanced profits (total profits increased by 
-                      <span className='text-xl font-light tracking-tight text-green-500'> 60%</span> )
+                      <span className='text-xl font-light tracking-tight text-green-500'> 100%</span> )
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
@@ -299,7 +305,7 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <span>Enhanced profits (total profits increased by 
-                      <span className='text-xl font-light tracking-tight text-green-500'> 60%</span> )
+                      <span className='text-xl font-light tracking-tight text-green-500'> 100%</span> )
                     </span>
                   </li>
                   <li className="flex items-start gap-3">

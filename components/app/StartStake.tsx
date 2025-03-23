@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useBatchUnstakeLocked, useUserStakingInfo } from '@/hooks/useOldStakingContracts';
@@ -19,6 +19,20 @@ export default function StartStake() {
     isPending,
     isConfirming,
   } = useStakeLocked();
+
+  // 从URL参数中获取默认选择的质押类型
+  useEffect(() => {
+    // 获取URL参数
+    const params = new URLSearchParams(window.location.search);
+    const typeParam = params.get('upgradestakes');
+    console.log(typeParam, 'typeParamtypeParamtypeParamtypeParam');
+    console.log(activeLockedStakes, 'activeLockedStakes');
+    if (typeParam && activeLockedStakes > 0) {
+      setTimeout(() => {
+        handleClick();
+      }, 200);
+    }
+  }, [activeLockedStakes]);
 
   // 一键提取 并且 质押新的
   const unStakeAllAndNewStake = async (stakeTypeNumber: StakeType) => {
@@ -42,15 +56,16 @@ export default function StartStake() {
       throw error;
     }
   };
+  const handleClick = () => {
+    modalRef.current!.openModal(unStakeAllAndNewStake);
+  };
 
   return (
     <>
       <div className="mt-10">
         {address && activeLockedStakes > 0 ? (
           <div 
-            onClick={() => {
-              modalRef.current!.openModal(unStakeAllAndNewStake)
-            }}
+            onClick={handleClick}
             className="inline-flex items-center px-8 py-4 rounded-xl bg-primary/80 text-white hover:bg-primary transition-colors text-lg font-medium shadow-lg hover:shadow-xl cursor-pointer"
           >
             One-click profit increases
