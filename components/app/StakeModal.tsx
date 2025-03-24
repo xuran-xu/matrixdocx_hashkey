@@ -140,7 +140,6 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
     if (props.isStakeSuccess && props.progressStep === props.activeLockedStakes) {
       setProcessComplete(true);
       toast.success('Upgrade successful!');
-      // 2s 后 刷新页面
       setTimeout(() => {
         window.location.reload();
       }, 2000);
@@ -149,6 +148,17 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
 
   return (
     <dialog ref={dialogRef} className="modal">
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          .spinner {
+            animation: spin 1s linear infinite;
+          }
+        `}
+      </style>
       <div className="modal-box bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-8 w-3/5 max-w-5xl">
         {isConfirmingClose ? (
           <div className="text-center space-y-6">
@@ -316,16 +326,25 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
                   </li>
                 </ul>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="flex justify-between text-sm text-slate-400">
                     <span>Migration Progress</span>
                     <span>{progressStep + (isStakeSuccess ? 1 : 0)} / {activeLockedStakes + 1}</span>
                   </div>
-                  <progress
-                    className="progress progress-success w-full h-3 bg-slate-700/50"
-                    value={progressStep + (isStakeSuccess ? 1 : 0)}
-                    max={activeLockedStakes + 1}
-                  />
+                  <div className="relative">
+                    <progress
+                      className="progress progress-success w-full h-3 bg-slate-700/50 transition-all duration-500 ease-in-out"
+                      value={progressStep + (isStakeSuccess ? 1 : 0)}
+                      max={activeLockedStakes + 1}
+                    />
+                    <div className="absolute inset-0 flex justify-center items-center">
+                      <div className="w-8 h-8 bg-green-500/30 rounded-full animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="flex justify-center items-center gap-2 text-slate-300">
+                    <span>Processing your upgrade... Please wait.</span>
+                    <div className="w-5 h-5 border-2 border-t-transparent border-green-500 rounded-full spinner" />
+                  </div>
                 </div>
               </>
             )}
