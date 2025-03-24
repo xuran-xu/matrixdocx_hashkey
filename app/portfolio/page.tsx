@@ -315,23 +315,23 @@ export default function PortfolioPage() {
                 {[1, 2].map((i) => (
                   <div key={i} className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 animate-pulse">
                     <div className="flex flex-wrap justify-between mb-4">
-                      <div className="mb-4 w-1/5">
+                      {/* <div className="mb-4 w-1/5">
+                        <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
+                        <div className="h-7 bg-slate-700 rounded w-24"></div>
+                      </div> */}
+                      <div className="mb-4 w-1/4">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
-                      <div className="mb-4 w-1/5">
+                      <div className="mb-4 w-1/4">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
-                      <div className="mb-4 w-1/5">
+                      <div className="mb-4 w-1/4">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
-                      <div className="mb-4 w-1/5">
-                        <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
-                        <div className="h-7 bg-slate-700 rounded w-24"></div>
-                      </div>
-                      <div className="mb-4 w-1/5">
+                      <div className="mb-4 w-1/4">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
@@ -377,12 +377,12 @@ export default function PortfolioPage() {
                             {formatBigInt(position.info.actualReward, 18, 4)} HSK
                           </p>
                         </div>
-                        <div className="w-full sm:w-auto mb-4 sm:mb-0">
+                        {/* <div className="w-full sm:w-auto mb-4 sm:mb-0">
                           <p className="text-sm text-slate-400 mb-1">APY</p>
                           <p className="text-xl font-medium text-green-500">
                             {getAPRForStakePeriod(position.info.lockEndTime)}
                           </p>
-                        </div>
+                        </div> */}
                         <div className="w-full sm:w-auto">
                           <p className="text-sm text-slate-400 mb-1">
                             {position.info.isLocked ? 'Time Remaining' : 'Unlocked on'}
