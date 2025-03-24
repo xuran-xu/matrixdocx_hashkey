@@ -116,7 +116,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </main>
       
       {/* Footer at the bottom */}
-      <Footer />
+      <div className="hidden md:block">
+        <Footer />
+      </div>
     </div>
   );
 }
