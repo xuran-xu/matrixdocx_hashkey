@@ -535,7 +535,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-medium text-white mb-2">Competitive APR</h3>
-                <p className="text-slate-400">Earn up to 12% annual returns on your staked HSK tokens</p>
+                <p className="text-slate-400">Earn up to 36% annual returns on your staked HSK tokens</p>
               </div>
               
               <div className="flex flex-col items-center text-center">

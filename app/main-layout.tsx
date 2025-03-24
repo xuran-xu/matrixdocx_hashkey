@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ConnectKitButton } from 'connectkit';
 import { Sora } from 'next/font/google';
 import { usePathname } from 'next/navigation';
-
+import Footer from '@/components/Footer';
 // Initialize Sora font
 const sora = Sora({
   subsets: ['latin'],
@@ -114,6 +114,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <main className="flex-grow">
         {children}
       </main>
+      
+      {/* Footer at the bottom */}
+      <Footer />
     </div>
   );
 }
