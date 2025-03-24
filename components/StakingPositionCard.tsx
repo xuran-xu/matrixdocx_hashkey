@@ -11,6 +11,7 @@ interface StakedPositionCardProps {
   lockEndTime: bigint;
   isWithdrawn: boolean;
   isLocked: boolean;
+  actualReward?: bigint;
   onUnstake: (stakeId: number) => void;
 }
 
@@ -22,6 +23,7 @@ export default function StakedPositionCard({
   lockEndTime,
   isWithdrawn,
   isLocked,
+  actualReward = BigInt(0),
   onUnstake
 }: StakedPositionCardProps) {
   // 计算收益/损失
@@ -33,6 +35,7 @@ export default function StakedPositionCard({
   const hskAmountFormatted = formatBigInt(hskAmount);
   const currentValueFormatted = formatBigInt(currentHskValue);
   const profitFormatted = formatBigInt(profitRaw);
+  const actualRewardFormatted = formatBigInt(actualReward, 18, 4);
   const profitPercentFormatted = (profitPercentage * 100).toFixed(2);
   
   // 计算剩余时间
@@ -76,6 +79,11 @@ export default function StakedPositionCard({
           <div>
             <p className="text-sm text-primary/80">当前价值</p>
             <p className="font-semibold text-primary/80">{currentValueFormatted} HSK</p>
+          </div>
+          
+          <div>
+            <p className="text-sm text-primary/80">实际奖励</p>
+            <p className="font-semibold text-green-500">{actualRewardFormatted} HSK</p>
           </div>
           
           <div>

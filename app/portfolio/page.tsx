@@ -9,7 +9,9 @@ import { useUnstakeLocked, useUserStakingInfo, batchGetStakingInfo, useAllStakin
 import { getContractAddresses } from '@/config/contracts';
 import { toast } from 'react-toastify';
 import AddressBar from '../../components/AddressBar';
-// import StakingHistory from '@/components/StakingHistory';
+import FlexibleStakingPositions from '@/components/portfolio/FlexibleStakingPositions';
+import OldStakingPositions from '@/components/portfolio/OldLockedStakingPositions';
+import { useUserFlexibleStakingInfo } from '@/hooks/useFlexibleStaking';
 
 export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
@@ -25,7 +27,8 @@ export default function PortfolioPage() {
   const [totalRewards, setTotalRewards] = useState<bigint>(BigInt(0));
   const { estimatedAPRs, isLoading: aprsLoading } = useAllStakingAPRs();
   const [aprDataSource, setAprDataSource] = useState<'contract' | 'loading'>('loading');
-  
+  const { flexibleStakeCount, activeFlexibleStakes, isLoading: loadingFlexibleInfo } = useUserFlexibleStakingInfo();
+
   // 添加modal状态
   const [showUnstakeModal, setShowUnstakeModal] = useState(false);
   const [unstakingPosition, setUnstakingPosition] = useState<number | null>(null);
@@ -52,6 +55,7 @@ export default function PortfolioPage() {
       // 交易已确认
       if (success) {
         toast.success('Successfully unstaked your position');
+        setShowUnstakeModal(false);
         // 刷新数据
         fetchStakedPositions();
       }
@@ -79,8 +83,9 @@ export default function PortfolioPage() {
       // 计算总确认收益仅供参考
       const confirmedTotalReward = stakesInfo
         .filter(info => !info.error && !info.isWithdrawn)
+        // .reduce((sum, info) => sum + info.actualReward, BigInt(0));
         .reduce((sum, info) => sum + (info.currentHskValue - info.hskAmount), BigInt(0));
-      
+
       setTotalRewards(confirmedTotalReward);
       
       // 转换为所需格式 - 包括所有质押，包括已提取的
@@ -94,7 +99,8 @@ export default function PortfolioPage() {
             currentHskValue: info.currentHskValue,
             lockEndTime: info.lockEndTime,
             isWithdrawn: info.isWithdrawn,
-            isLocked: info.isLocked
+            isLocked: info.isLocked,
+            actualReward: info.actualReward
           }
         }));
       
@@ -120,7 +126,7 @@ export default function PortfolioPage() {
     
     return () => clearInterval(intervalId);
   }, [fetchStakedPositions]);
-  
+
   // Modal处理 - 打开确认对话框
   const openUnstakeConfirmation = (stakeId: number) => {
     const position = stakedPositions.find(pos => pos.id === stakeId);
@@ -129,7 +135,7 @@ export default function PortfolioPage() {
     setUnstakingPosition(stakeId);
     setShowUnstakeModal(true);
   };
-  
+
   // 处理解除质押点击
   const handleUnstakeClick = (stakeId: number) => {
     const position = stakedPositions.find(pos => pos.id === stakeId);
@@ -199,8 +205,11 @@ export default function PortfolioPage() {
       return `${apr365.toFixed(2)}%`; // 365天锁定
     }
   }, [estimatedAPRs, aprsLoading]);
-  
 
+  const getFlexibleAPR = () => {
+    if (!estimatedAPRs || aprsLoading) return 'Loading...';
+    return estimatedAPRs[4] ? `${(Number(estimatedAPRs[4]) / 100).toFixed(2)}%` : 'N/A';
+  };
 
   return (
     <MainLayout>
@@ -244,13 +253,13 @@ export default function PortfolioPage() {
                 )}
               </span>
             </div>
-            
+
             {lastUpdateTime && (
               <div className="text-sm text-slate-400 mb-4">
                 Last update: {lastUpdateTime.toLocaleTimeString()}
               </div>
             )}
-            
+              
             {/* 概览统计 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
@@ -261,14 +270,13 @@ export default function PortfolioPage() {
                   <h3 className="text-sm font-medium text-primary/80">Active Stakes</h3>
                 </div>
                 <p className="text-2xl font-medium text-white">
-                  {loadingInfo || isLoadingPositions ? (
+                  {loadingInfo || loadingFlexibleInfo || isLoadingPositions ? (
                     <span className="inline-block w-10 h-7 bg-slate-700 rounded animate-pulse"></span>
                   ) : (
-                    Number(activeLockedStakes || 0)
+                    Number(activeLockedStakes || 0) + Number(activeFlexibleStakes || 0)
                   )}
                 </p>
               </div>
-  
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <svg className="w-5 h-5 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -277,14 +285,14 @@ export default function PortfolioPage() {
                   <h3 className="text-sm font-medium text-primary/80">Completed Stakes</h3>
                 </div>
                 <p className="text-2xl font-medium text-white">
-                  {loadingInfo ? (
+                  {loadingInfo || loadingFlexibleInfo ? (
                     <span className="inline-block w-10 h-7 bg-slate-700 rounded animate-pulse"></span>
                   ) : (
-                    Number(lockedStakeCount || 0) - Number(activeLockedStakes || 0)
+                    (Number(lockedStakeCount || 0) + Number(flexibleStakeCount || 0)) -
+                    (Number(activeLockedStakes || 0) + Number(activeFlexibleStakes || 0))
                   )}
                 </p>
               </div>
-  
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <svg className="w-5 h-5 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,32 +304,34 @@ export default function PortfolioPage() {
                   {isLoadingPositions ? (
                     <span className="inline-block w-24 h-7 bg-slate-700 rounded animate-pulse"></span>
                   ) : (
-                    <>
-                      +{formatBigInt(totalRewards)} HSK
-                    </>
+                    `+${formatBigInt(totalRewards, 18, 4)} HSK`
                   )}
                 </p>
               </div>
             </div>
-  
-            {/* 活跃质押列表 */}
             <h2 className="text-2xl font-light text-white mb-6">Active Stakes</h2>
-            
             {isLoadingPositions ? (
-              // 骨架加载卡片
               <div className="space-y-4">
                 {[1, 2].map((i) => (
                   <div key={i} className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 animate-pulse">
                     <div className="flex flex-wrap justify-between mb-4">
-                      <div className="mb-4 w-1/3">
+                      <div className="mb-4 w-1/5">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
-                      <div className="mb-4 w-1/3">
+                      <div className="mb-4 w-1/5">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
-                      <div className="mb-4 w-1/3">
+                      <div className="mb-4 w-1/5">
+                        <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
+                        <div className="h-7 bg-slate-700 rounded w-24"></div>
+                      </div>
+                      <div className="mb-4 w-1/5">
+                        <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
+                        <div className="h-7 bg-slate-700 rounded w-24"></div>
+                      </div>
+                      <div className="mb-4 w-1/5">
                         <div className="h-5 bg-slate-700 rounded mb-2 w-20"></div>
                         <div className="h-7 bg-slate-700 rounded w-24"></div>
                       </div>
@@ -335,57 +345,57 @@ export default function PortfolioPage() {
                 {stakedPositions
                   .filter(position => !position.info.isWithdrawn)
                   .map((position) => (
-                  <div key={position.id} className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50">
-                    <div className="flex flex-wrap justify-between mb-6">
-                      <div className="w-full sm:w-auto mb-4 sm:mb-0">
-                        <h3 className="text-sm text-slate-400 mb-1">Stake #{position.id}</h3>
-                        <div className="flex items-center">
+                    <div key={position.id} className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50">
+                      <div className="flex flex-wrap justify-between mb-6">
+                        <div className="w-full sm:w-auto mb-4 sm:mb-0">
+                          <h3 className="text-sm text-slate-400 mb-1">Stake #{position.id}</h3>
+                          <div className="flex items-center">
+                            <p className="text-xl font-medium text-white">
+                              {formatBigInt(position.info.sharesAmount)} stHSK
+                            </p>
+                            {position.info.isLocked && (
+                              <span className="ml-3 px-2 py-1 text-xs font-medium bg-primary/20 text-primary/90 rounded">
+                                Locked
+                              </span>
+                            )}
+                            {!position.info.isLocked && (
+                              <span className="ml-3 px-2 py-1 text-xs font-medium bg-green-500/20 text-green-500 rounded">
+                                Unlocked
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="w-full sm:w-auto mb-4 sm:mb-0 sm:mx-4">
+                          <p className="text-sm text-slate-400 mb-1">Current Value</p>
                           <p className="text-xl font-medium text-white">
-                            {formatBigInt(position.info.sharesAmount)} stHSK
+                            {formatBigInt(position.info.currentHskValue)} HSK
                           </p>
-                          {position.info.isLocked && (
-                            <span className="ml-3 px-2 py-1 text-xs font-medium bg-primary/20 text-primary/90 rounded">
-                              Locked
-                            </span>
-                          )}
-                          {!position.info.isLocked && (
-                            <span className="ml-3 px-2 py-1 text-xs font-medium bg-green-500/20 text-green-500 rounded">
-                              Unlocked
-                            </span>
-                          )}
+                        </div>
+                        <div className="w-full sm:w-auto mb-4 sm:mb-0 sm:mx-4">
+                          <p className="text-sm text-slate-400 mb-1">Actual Reward</p>
+                          <p className="text-xl font-medium text-green-500">
+                            {formatBigInt(position.info.actualReward, 18, 4)} HSK
+                          </p>
+                        </div>
+                        <div className="w-full sm:w-auto mb-4 sm:mb-0">
+                          <p className="text-sm text-slate-400 mb-1">APY</p>
+                          <p className="text-xl font-medium text-green-500">
+                            {getAPRForStakePeriod(position.info.lockEndTime)}
+                          </p>
+                        </div>
+                        <div className="w-full sm:w-auto">
+                          <p className="text-sm text-slate-400 mb-1">
+                            {position.info.isLocked ? 'Time Remaining' : 'Unlocked on'}
+                          </p>
+                          <p className="text-xl font-medium text-white">
+                            {position.info.isLocked
+                              ? formatTimeRemaining(position.info.lockEndTime)
+                              : new Date(Number(position.info.lockEndTime) * 1000).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
-                      
-                      <div className="w-full sm:w-auto mb-4 sm:mb-0 sm:mx-4">
-                        <p className="text-sm text-slate-400 mb-1">Current Value</p>
-                        <p className="text-xl font-medium text-white">
-                          {formatBigInt(position.info.currentHskValue)} HSK
-                        </p>
-                      </div>
-                      
-                      <div className="w-full sm:w-auto mb-4 sm:mb-0">
-                        <p className="text-sm text-slate-400 mb-1">APY</p>
-                        <p className="text-xl font-medium text-green-500">
-                          {getAPRForStakePeriod(position.info.lockEndTime)}
-                        </p>
-                      </div>
-                      
-                      <div className="w-full sm:w-auto">
-                        <p className="text-sm text-slate-400 mb-1">
-                          {position.info.isLocked ? 'Time Remaining' : 'Unlocked on'}
-                        </p>
-                        <p className="text-xl font-medium text-white">
-                          {position.info.isLocked ? 
-                            formatTimeRemaining(position.info.lockEndTime) : 
-                            new Date(Number(position.info.lockEndTime) * 1000).toLocaleDateString()
-                          }
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {!position.info.isWithdrawn && (
-                      <div className="flex justify-end">
-                        {!position.info.isLocked ? (
+                      {!position.info.isWithdrawn && (
+                        <div className="flex justify-end">
                           <button
                             onClick={() => handleUnstakeClick(position.id)}
                             disabled={processingStakeId === position.id}
@@ -400,23 +410,15 @@ export default function PortfolioPage() {
                                 Processing...
                               </>
                             ) : (
-                              <>
-                                Unstake
-                              </>
+                              'Unstake'
                             )}
                           </button>
-                        ) : (
-                          <div className="text-sm text-slate-400">
-                            Available after lock period ends
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </div>
             ) : (
-              // 未找到质押
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-8 border border-slate-700/50 text-center">
                 <svg className="w-12 h-12 text-slate-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -425,29 +427,29 @@ export default function PortfolioPage() {
                 <p className="text-slate-400 mb-6">
                   You don't have any active stakes yet. Start staking to earn rewards.
                 </p>
-                <a 
-                  href="/stake" 
-                  className="inline-block px-6 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors"
-                >
+                <a href="/stake" className="inline-block px-6 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors">
                   Start Staking
                 </a>
               </div>
             )}
+            {/* 添加灵活质押部分 */}
+            <FlexibleStakingPositions
+              onTotalRewardsChange={(rewards) => setTotalRewards((prev) => prev + rewards)}
+              isLoadingPositions={isLoadingPositions}
+              setIsLoadingPositions={setIsLoadingPositions}
+              processingStakeId={processingStakeId}
+              setProcessingStakeId={setProcessingStakeId}
+              getFlexibleAPR={getFlexibleAPR}
+            />
+            {/* 添加老合约质押部分 */}
+            <OldStakingPositions />
           </div>
         </div>
       </div>
-
-      {/* <div className="mt-12 pt-12 border-t border-slate-700/50">
-        <h2 className="text-4xl font-light text-white mb-6">Staking History</h2>
-        <StakingHistory />
-      </div>
-       */}
-      {/* 确认模态窗口 */}
       {showUnstakeModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
             <h3 className="text-xl font-medium text-white mb-4">Early Unstake Warning</h3>
-            
             <div className="mb-6">
               <div className="flex items-start mb-4">
                 <svg className="w-6 h-6 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -457,7 +459,6 @@ export default function PortfolioPage() {
                   You are unstaking before the lock period ends. This will result in a penalty and you will not receive the full rewards.
                 </p>
               </div>
-              
               <div className="bg-yellow-500/20 border border-yellow-500/40 rounded-lg p-4 text-sm text-yellow-200">
                 <p className="font-medium mb-2">Penalty details:</p>
                 <ul className="list-disc list-inside space-y-1">
@@ -467,7 +468,6 @@ export default function PortfolioPage() {
                 </ul>
               </div>
             </div>
-            
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => {
@@ -483,11 +483,7 @@ export default function PortfolioPage() {
                 disabled={processingStakeId !== null}
                 className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
               >
-                {unstakePending 
-                  ? 'Awaiting wallet confirmation...'
-                  : unstakeConfirming
-                    ? 'Confirming transaction...'
-                    : 'Confirm Unstake'}
+                {unstakePending ? 'Awaiting wallet confirmation...' : unstakeConfirming ? 'Confirming transaction...' : 'Confirm Unstake'}
               </button>
             </div>
           </div>

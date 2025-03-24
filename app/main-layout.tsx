@@ -27,10 +27,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }, []);
 
   const menuItems = [
-    {
-      name: 'Home',
-      path: '/',
-    },
+    // {
+    //   name: 'Home',
+    //   path: '/',
+    // },
     {
       name: 'Stake',
       path: '/stake',
