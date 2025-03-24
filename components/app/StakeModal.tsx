@@ -275,7 +275,7 @@ const Modal = forwardRef<{ openModal: (processFunction: ProcessFunction) => void
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-slate-400">Current APR</span>
-                            <span className="text-cyan-400 font-medium text-xl">{option.currentAPR.toFixed(2)}%</span>
+                            <span className="text-cyan-400 font-medium text-xl">{(option.maxAPR - 2).toFixed(2)}%</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-slate-400">Max APR</span>
