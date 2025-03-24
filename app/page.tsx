@@ -210,7 +210,7 @@ export default function Home() {
           title: 'Flexible',
           duration: 0,
           durationDisplay: 'Flexible',
-          apr: aprFlexible,
+          apr: 1.8,
           bonus: bonus30,
           maxApr: maxAprFlexible,
           stakeType: StakeType.FLEXIBLE
@@ -219,7 +219,7 @@ export default function Home() {
           title: '30 Day Lock',
           duration: 30,
           durationDisplay: '30 days',
-          apr: apr30,
+          apr: 3.6,
           bonus: bonus30,
           maxApr: maxApr30,
           stakeType: StakeType.FIXED_30_DAYS
@@ -228,7 +228,7 @@ export default function Home() {
           title: '90 Day Lock',
           duration: 90,
           durationDisplay: '90 days',
-          apr: apr90,
+          apr: 8,
           bonus: bonus90,
           maxApr: maxApr90,
           stakeType: StakeType.FIXED_90_DAYS
@@ -237,7 +237,7 @@ export default function Home() {
           title: '180 Day Lock',
           duration: 180,
           durationDisplay: '180 days',
-          apr: apr180,
+          apr: 16,
           bonus: bonus180,
           maxApr: maxApr180,
           stakeType: StakeType.FIXED_180_DAYS
@@ -246,7 +246,7 @@ export default function Home() {
           title: '365 Day Lock',
           duration: 365,
           durationDisplay: '365 days',
-          apr: apr365,
+          apr: 34,
           bonus: bonus365,
           maxApr: maxApr365,
           stakeType: StakeType.FIXED_365_DAYS
