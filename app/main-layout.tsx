@@ -110,8 +110,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </div>
       </div>
       
-      {/* Page content */}
-      <main className="flex-grow">
+      {/* Page content with padding for fixed footer on desktop */}
+      <main className="flex-grow pb-[28px] md:pb-[88px]">
         {children}
       </main>
       
