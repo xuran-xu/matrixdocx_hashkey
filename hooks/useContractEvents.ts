@@ -72,8 +72,7 @@ declare global {
 // Constants
 const MAX_BLOCK_RANGE = 1000; // Maximum block range allowed by the RPC provider
 
-// Add new helper function before useContractEvents
-// 这是当时的 sharesAmount
+// Helper function to calculate total difference
 const calculateTotalDifference = (events: StakeEvent[]): bigint => {
   return events.reduce((sum, event) => {
     const difference = event.hskAmount - event.sharesAmount;
@@ -81,33 +80,21 @@ const calculateTotalDifference = (events: StakeEvent[]): bigint => {
   }, BigInt(0));
 };
 
-// 计算当前 sharesAmount
-// const calculateLowTotalDifference = (events: StakeEvent[]): bigint => {
-//   return events.reduce((sum, event) => {
-//     const _sharesAmount = 
-//     const difference = event.hskAmount - _sharesAmount;
-//     return sum + difference;
-//   }, BigInt(0));
-// };
-// 将惩罚改成
-
-/**
- * Hook to fetch all historical Stake and Unstake events from the contract
- * @param fromBlock Optional starting block number (defaults to 0)
- * @param toBlock Optional ending block number (defaults to 'latest')
- * @param userAddress Optional address to filter events by user
- * @returns Object containing stake events, unstake events, loading state, and error state
- */
-// Add utility function to convert BigInt to string for Excel compatibility
+// Utility function to convert BigInt to string for Excel compatibility
 const convertBigIntToString = (value: bigint | number): string => value.toString();
 
-// Add export to Excel functionality
-export function exportToExcel(events: StakeEvent[], filename: string = 'stake-events.xlsx') {
+// Updated exportToExcel function to handle three sheets
+export function exportToExcel(
+  stakeEvents: StakeEvent[],
+  unstakeEvents: UnstakeEvent[],
+  activeStakeEvents: StakeEvent[],
+  filename: string = 'contract-events.xlsx'
+) {
   const XLSX = require('xlsx');
-  
-  // Convert events data to worksheet
-  const worksheet = XLSX.utils.json_to_sheet(
-    events.map(event => ({
+
+  // Worksheet for Stake Events
+  const stakeWorksheet = XLSX.utils.json_to_sheet(
+    stakeEvents.map(event => ({
       User: event.user,
       HSK_Amount: convertBigIntToString(event.hskAmount),
       Shares_Amount: convertBigIntToString(event.sharesAmount),
@@ -120,14 +107,47 @@ export function exportToExcel(events: StakeEvent[], filename: string = 'stake-ev
     }))
   );
 
-  // Create workbook and add worksheet
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Stake Events');
+  // Worksheet for Unstake Events
+  const unstakeWorksheet = XLSX.utils.json_to_sheet(
+    unstakeEvents.map(event => ({
+      User: event.user,
+      Shares_Amount: convertBigIntToString(event.sharesAmount),
+      HSK_Amount: convertBigIntToString(event.hskAmount),
+      Is_Early_Withdrawal: event.isEarlyWithdrawal,
+      Penalty: convertBigIntToString(event.penalty),
+      Stake_ID: convertBigIntToString(event.stakeId),
+      Block_Number: convertBigIntToString(event.blockNumber),
+      Transaction_Hash: event.transactionHash,
+      Log_Index: event.logIndex
+    }))
+  );
 
-  // Generate file and trigger download
+  // Worksheet for Active Stake Events (same format as Stake Events)
+  const activeStakeWorksheet = XLSX.utils.json_to_sheet(
+    activeStakeEvents.map(event => ({
+      User: event.user,
+      HSK_Amount: convertBigIntToString(event.hskAmount),
+      Shares_Amount: convertBigIntToString(event.sharesAmount),
+      Stake_Type: event.stakeType,
+      Lock_End_Time: convertBigIntToString(event.lockEndTime),
+      Stake_ID: convertBigIntToString(event.stakeId),
+      Block_Number: convertBigIntToString(event.blockNumber),
+      Transaction_Hash: event.transactionHash,
+      Log_Index: event.logIndex
+    }))
+  );
+
+  // Create workbook and append all three sheets
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, stakeWorksheet, 'Stake Events');
+  XLSX.utils.book_append_sheet(workbook, unstakeWorksheet, 'Unstake Events');
+  XLSX.utils.book_append_sheet(workbook, activeStakeWorksheet, 'Active Stakes');
+
+  // Write the file and trigger download
   XLSX.writeFile(workbook, filename);
 }
 
+// Updated useContractEvents hook
 export function useContractEvents(
   fromBlock: bigint = 0n,
   toBlock: bigint | 'latest' = 'latest',
@@ -136,9 +156,10 @@ export function useContractEvents(
   const chainId = useChainId();
   const publicClient = usePublicClient();
   const contractAddress = getContractAddresses(chainId).stakingOldContract;
-  
+
   const [stakeEvents, setStakeEvents] = useState<StakeEvent[]>([]);
   const [unstakeEvents, setUnstakeEvents] = useState<UnstakeEvent[]>([]);
+  const [activeStakeEvents, setActiveStakeEvents] = useState<StakeEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -153,6 +174,7 @@ export function useContractEvents(
       setError(null);
       setStakeEvents([]);
       setUnstakeEvents([]);
+      setActiveStakeEvents([]);
 
       try {
         // Get the latest block number if toBlock is 'latest'
@@ -163,7 +185,7 @@ export function useContractEvents(
           resolvedToBlock = toBlock;
         }
 
-        // Define event filters (without block range yet)
+        // Define event filters
         const stakeEventSignature = parseAbiItem('event Stake(address indexed user, uint256 hskAmount, uint256 sharesAmount, uint8 stakeType, uint256 lockEndTime, uint256 stakeId)');
         const unstakeEventSignature = parseAbiItem('event Unstake(address indexed user, uint256 sharesAmount, uint256 hskAmount, bool isEarlyWithdrawal, uint256 penalty, uint256 stakeId)');
 
@@ -171,19 +193,15 @@ export function useContractEvents(
         const allStakeEvents: StakeEvent[] = [];
         const allUnstakeEvents: UnstakeEvent[] = [];
 
-        // Calculate the number of chunks needed
-        let currentFromBlock = fromBlock;
-        
         // Fetch events in chunks
+        let currentFromBlock = fromBlock;
         while (currentFromBlock <= resolvedToBlock) {
-          // Calculate the end block for this chunk
           const chunkToBlock = currentFromBlock + BigInt(MAX_BLOCK_RANGE) > resolvedToBlock 
             ? resolvedToBlock 
             : currentFromBlock + BigInt(MAX_BLOCK_RANGE - 1);
-          
+
           console.log(`Fetching events from block ${currentFromBlock} to ${chunkToBlock}`);
-          
-          // Create filters for this chunk
+
           const stakeEventFilter = {
             address: contractAddress,
             event: stakeEventSignature,
@@ -201,16 +219,15 @@ export function useContractEvents(
           };
 
           try {
-            // Fetch events for this chunk in parallel
             const [stakeLogsResult, unstakeLogsResult] = await Promise.all([
               publicClient.getLogs(stakeEventFilter),
               publicClient.getLogs(unstakeEventFilter),
             ]);
+
             if (stakeLogsResult.length) {
-              console.log(stakeLogsResult, 'stakeLogsResult')
+              console.log(stakeLogsResult, 'stakeLogsResult');
             }
 
-            // Process stake events
             const processedStakeEvents = stakeLogsResult.map(log => {
               const typedLog = log as unknown as StakeLog;
               return {
@@ -226,7 +243,6 @@ export function useContractEvents(
               };
             });
 
-            // Process unstake events
             const processedUnstakeEvents = unstakeLogsResult.map(log => {
               const typedLog = log as unknown as UnstakeLog;
               return {
@@ -242,40 +258,43 @@ export function useContractEvents(
               };
             });
 
-            // Add events from this chunk to the overall results
             allStakeEvents.push(...processedStakeEvents);
             allUnstakeEvents.push(...processedUnstakeEvents);
 
-            // const allStakeDiff = allStakeEvents.map((event, index) => {
-            //   return allStakeEvents.findIndex((e) => e.stakeId === event.stakeId) === index;
-            // });
-         
-            // Update state with progress
             setStakeEvents(prev => [...prev, ...processedStakeEvents]);
             setUnstakeEvents(prev => [...prev, ...processedUnstakeEvents]);
           } catch (chunkError) {
             console.error(`Error fetching events for block range ${currentFromBlock}-${chunkToBlock}:`, chunkError);
-            // Continue with the next chunk instead of stopping completely
           }
 
-          // Move to the next chunk
           currentFromBlock = chunkToBlock + 1n;
         }
 
         // Sort events by block number (newest first)
         allStakeEvents.sort((a, b) => Number(b.blockNumber - a.blockNumber));
         allUnstakeEvents.sort((a, b) => Number(b.blockNumber - a.blockNumber));
-        setTimeout(() => {
-          exportToExcel(allStakeEvents, 'stake-events.xlsx');
-        }, 1000);
-        // Calculate total difference after getting all events
-        const totalDifference = calculateTotalDifference(allStakeEvents);
-        console.log('Total HSK-Shares difference:', totalDifference.toString());
 
-        // Set final results
+        // Compute Active Stake Events
+        const unstakedKeys = new Set(
+          allUnstakeEvents.map(event => `${event.user}-${event.stakeId.toString()}`)
+        );
+        const activeStakes = allStakeEvents.filter(
+          event => !unstakedKeys.has(`${event.user}-${event.stakeId.toString()}`)
+        );
+
+        // Set all event states
         setStakeEvents(allStakeEvents);
         setUnstakeEvents(allUnstakeEvents);
-        
+        setActiveStakeEvents(activeStakes);
+
+        // Export all three event types to Excel
+        setTimeout(() => {
+          exportToExcel(allStakeEvents, allUnstakeEvents, activeStakes, 'contract-events.xlsx');
+        }, 1000);
+
+        // Calculate total difference
+        const totalDifference = calculateTotalDifference(allStakeEvents);
+        console.log('Total HSK-Shares difference:', totalDifference.toString());
 
       } catch (err) {
         console.error('Error fetching contract events:', err);
@@ -288,37 +307,31 @@ export function useContractEvents(
     fetchEvents();
   }, [publicClient, contractAddress, fromBlock, toBlock, userAddress]);
 
-  return { stakeEvents, unstakeEvents, isLoading, error };
+  return { stakeEvents, unstakeEvents, activeStakeEvents, isLoading, error };
 }
 
-/**
- * Utility function to fetch all historical contract events without using a hook
- * Useful for server components or one-time fetches
- */
+// Utility function to fetch contract events (unchanged)
 export async function fetchContractEvents(
   contractAddress: `0x${string}`,
-  fromBlock: bigint = 3319640n,
+  fromBlock: bigint = 4189965n,
   toBlock: bigint | 'latest' = 'latest',
   userAddress?: `0x${string}`,
   rpcUrl?: string
 ) {
-  // Create a public client if not provided
   const client = rpcUrl 
     ? createPublicClient({
         chain: mainnet,
         transport: http(rpcUrl),
       })
     : undefined;
-    
-  // Use provided client or create a new one
+
   const publicClient = client || (typeof window !== 'undefined' ? window.publicClient : undefined);
-  
+
   if (!publicClient) {
     throw new Error('No public client available. Please provide an RPC URL or ensure a global client exists.');
   }
-  
+
   try {
-    // Get the latest block number if toBlock is 'latest'
     let resolvedToBlock: bigint;
     if (toBlock === 'latest') {
       resolvedToBlock = await publicClient.getBlockNumber();
@@ -326,27 +339,20 @@ export async function fetchContractEvents(
       resolvedToBlock = toBlock;
     }
 
-    // Define event signatures
     const stakeEventSignature = parseAbiItem('event Stake(address indexed user, uint256 hskAmount, uint256 sharesAmount, uint8 stakeType, uint256 lockEndTime, uint256 stakeId)');
     const unstakeEventSignature = parseAbiItem('event Unstake(address indexed user, uint256 sharesAmount, uint256 hskAmount, bool isEarlyWithdrawal, uint256 penalty, uint256 stakeId)');
 
-    // Prepare arrays to collect all events
     const allStakeEvents: StakeEvent[] = [];
     const allUnstakeEvents: UnstakeEvent[] = [];
 
-    // Calculate the number of chunks needed
     let currentFromBlock = fromBlock;
-    
-    // Fetch events in chunks
     while (currentFromBlock <= resolvedToBlock) {
-      // Calculate the end block for this chunk
       const chunkToBlock = currentFromBlock + BigInt(MAX_BLOCK_RANGE) > resolvedToBlock 
         ? resolvedToBlock 
         : currentFromBlock + BigInt(MAX_BLOCK_RANGE - 1);
-      
+
       console.log(`Fetching events from block ${currentFromBlock} to ${chunkToBlock}`);
-      
-      // Create filters for this chunk
+
       const stakeEventFilter = {
         address: contractAddress,
         event: stakeEventSignature,
@@ -364,13 +370,11 @@ export async function fetchContractEvents(
       };
 
       try {
-        // Fetch events for this chunk in parallel
         const [stakeLogsResult, unstakeLogsResult] = await Promise.all([
           publicClient.getLogs(stakeEventFilter),
           publicClient.getLogs(unstakeEventFilter),
         ]);
 
-        // Process stake events
         const processedStakeEvents = stakeLogsResult.map((log: unknown) => {
           const typedLog = log as unknown as StakeLog;
           return {
@@ -386,7 +390,6 @@ export async function fetchContractEvents(
           };
         });
 
-        // Process unstake events
         const processedUnstakeEvents = unstakeLogsResult.map((log: unknown) => {
           const typedLog = log as unknown as UnstakeLog;
           return {
@@ -402,20 +405,15 @@ export async function fetchContractEvents(
           };
         });
 
-        // Add events from this chunk to the overall results
         allStakeEvents.push(...processedStakeEvents);
         allUnstakeEvents.push(...processedUnstakeEvents);
-        
       } catch (chunkError) {
         console.error(`Error fetching events for block range ${currentFromBlock}-${chunkToBlock}:`, chunkError);
-        // Continue with the next chunk instead of stopping completely
       }
 
-      // Move to the next chunk
       currentFromBlock = chunkToBlock + 1n;
     }
 
-    // Sort events by block number (newest first)
     allStakeEvents.sort((a, b) => Number(b.blockNumber - a.blockNumber));
     allUnstakeEvents.sort((a, b) => Number(b.blockNumber - a.blockNumber));
 

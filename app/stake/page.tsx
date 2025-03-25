@@ -133,7 +133,7 @@ export default function StakePage() {
           title: 'Flexible',
           duration: 0,
           durationDisplay: 'Flexible',
-          apr: 1.8,
+          apr: aprFlexible,
           bonus: bonus30,
           maxApr: maxAprFlexible,
           stakeType: StakeType.FLEXIBLE
@@ -142,7 +142,7 @@ export default function StakePage() {
           title: '30 Day Lock',
           duration: 30,
           durationDisplay: '30 days',
-          apr: 3.6,
+          apr: apr30,
           bonus: bonus30,
           maxApr: maxApr30,
           stakeType: StakeType.FIXED_30_DAYS
@@ -151,7 +151,7 @@ export default function StakePage() {
           title: '90 Day Lock',
           duration: 90,
           durationDisplay: '90 days',
-          apr: 8,
+          apr: apr90,
           bonus: bonus90,
           maxApr: maxApr90,
           stakeType: StakeType.FIXED_90_DAYS
@@ -160,7 +160,7 @@ export default function StakePage() {
           title: '180 Day Lock',
           duration: 180,
           durationDisplay: '180 days',
-          apr: 16,
+          apr: apr180,
           bonus: bonus180,
           maxApr: maxApr180,
           stakeType: StakeType.FIXED_180_DAYS
@@ -169,7 +169,7 @@ export default function StakePage() {
           title: '365 Day Lock',
           duration: 365,
           durationDisplay: '365 days',
-          apr: 34,
+          apr: apr365,
           bonus: bonus365,
           maxApr: maxApr365,
           stakeType: StakeType.FIXED_365_DAYS
@@ -332,7 +332,7 @@ export default function StakePage() {
                       <span className="text-cyan-400 font-medium">Duration: </span>
                       <span className="text-white">{selectedDays} days</span>
                       <span className="mx-2 text-slate-500">|</span>
-                      <span className="text-cyan-400 font-medium">APR: </span>
+                      <span className="text-cyan-400 font-medium">APY: </span>
                       <span className="text-cyan-300 font-semibold">{stakingOptions.find(opt => opt.duration === selectedDays)?.apr.toFixed(2) || '0.00'}%</span>
                       {/* <span className="mx-2 text-slate-500">|</span>
                       <span className="text-cyan-400 font-medium">Lock Reward: </span>
@@ -391,7 +391,7 @@ export default function StakePage() {
                           </div>
                         </div>
                         <div className="flex justify-between items-center mb-1">
-                          <div className={`text-sm ${selectedDays === option.duration ? 'text-cyan-400 font-medium' : 'text-slate-400'}`}>APR</div>
+                          <div className={`text-sm ${selectedDays === option.duration ? 'text-cyan-400 font-medium' : 'text-slate-400'}`}>APY</div>
                           <div className={`text-xl font-bold ${selectedDays === option.duration ? 'text-cyan-300' : 'text-cyan-400'}`}>
                             {option.apr.toFixed(2)}%
                           </div>
@@ -411,7 +411,7 @@ export default function StakePage() {
                         </div> */}
                         {option.maxApr > option.apr && (
                           <div className={`mt-2 text-xs font-medium ${selectedDays === option.duration ? 'text-emerald-300' : 'text-emerald-400'}`}>
-                            Up to {option.maxApr.toFixed(2)}% APR
+                            Up to {option.maxApr.toFixed(2)}% APY
                           </div>
                         )}
                       </button>
