@@ -210,7 +210,7 @@ export default function Home() {
           title: 'Flexible',
           duration: 0,
           durationDisplay: 'Flexible',
-          apr: 1.8,
+          apr: aprFlexible,
           bonus: bonus30,
           maxApr: maxAprFlexible,
           stakeType: StakeType.FLEXIBLE
@@ -219,7 +219,7 @@ export default function Home() {
           title: '30 Day Lock',
           duration: 30,
           durationDisplay: '30 days',
-          apr: 3.6,
+          apr: apr30,
           bonus: bonus30,
           maxApr: maxApr30,
           stakeType: StakeType.FIXED_30_DAYS
@@ -228,7 +228,7 @@ export default function Home() {
           title: '90 Day Lock',
           duration: 90,
           durationDisplay: '90 days',
-          apr: 8,
+          apr: apr90,
           bonus: bonus90,
           maxApr: maxApr90,
           stakeType: StakeType.FIXED_90_DAYS
@@ -237,7 +237,7 @@ export default function Home() {
           title: '180 Day Lock',
           duration: 180,
           durationDisplay: '180 days',
-          apr: 16,
+          apr: apr180,
           bonus: bonus180,
           maxApr: maxApr180,
           stakeType: StakeType.FIXED_180_DAYS
@@ -246,7 +246,7 @@ export default function Home() {
           title: '365 Day Lock',
           duration: 365,
           durationDisplay: '365 days',
-          apr: 34,
+          apr: apr365,
           bonus: bonus365,
           maxApr: maxApr365,
           stakeType: StakeType.FIXED_365_DAYS
@@ -427,7 +427,7 @@ export default function Home() {
                 <svg className="w-6 h-6 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h12M3 12h8m-8 5h16" />
                 </svg>
-                <h3 className="text-sm font-medium text-slate-300">MAX APR</h3>
+                <h3 className="text-sm font-medium text-slate-300">Max APY</h3>
                 <div className="tooltip tooltip-right" data-tip="Rate increases as rewards accumulate">
                   <svg className="w-4 h-4 text-primary/40 hover:text-primary/60 transition-colors cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -492,7 +492,7 @@ export default function Home() {
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-400">Current APR</span>
+                    <span className="text-slate-400">Current APY</span>
                     <span className="text-cyan-400 font-medium text-xl">{option.apr.toFixed(2)}%</span>
                   </div>
                   
@@ -506,7 +506,7 @@ export default function Home() {
                   </div> */}
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-400 ">Max APR</span>
+                    <span className="text-slate-400 ">Max APY</span>
                     <span className="text-cyan-400 font-medium text-xl">{option.maxApr.toFixed(2)}%</span>
                   </div>
                 </div>
