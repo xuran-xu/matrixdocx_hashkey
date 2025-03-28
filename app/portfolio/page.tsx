@@ -86,7 +86,7 @@ export default function PortfolioPage() {
         // .reduce((sum, info) => sum + info.actualReward, BigInt(0));
         .reduce((sum, info) => sum + (info.currentHskValue - info.hskAmount), BigInt(0));
 
-      setTotalRewards(confirmedTotalReward);
+        setTotalRewards(confirmedTotalReward < 0 ? BigInt(0) : confirmedTotalReward);
       
       // 转换为所需格式 - 包括所有质押，包括已提取的
       const positions = stakesInfo
