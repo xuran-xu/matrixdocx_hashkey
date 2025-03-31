@@ -474,7 +474,7 @@ export default function Home() {
         </div>
         
         {/* Staking Options Section */}
-        <div className="container mx-auto px-4 py-16 bg-slate-800/30">
+        <div className="container mx-auto px-4 py-16">
           <h2 className="text-3xl font-light mb-10 text-center text-white">Staking Options</h2>
           <div className="flex justify-center mb-8">
             {renderDataSourceIndicator()}
