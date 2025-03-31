@@ -110,11 +110,11 @@ export default function StakePage() {
       const apr365 = Number(estimatedAPRs[3] || BigInt(0)) / 100;
       const aprFlexible = Number(estimatedAPRs[4] || BigInt(0)) / 100;
 
-      const maxApr30 = Number(BigInt(180)) / 100;
-      const maxApr90 = Number(BigInt(360)) / 100;
-      const maxApr180 = Number(BigInt(1000)) / 100;
-      const maxApr365 = Number(BigInt(1800)) / 100;
-      const maxAprFlexible = Number(BigInt(3400)) / 100;
+      const maxApr30 = Number(BigInt(360)) / 100;
+      const maxApr90 = Number(BigInt(1000)) / 100;
+      const maxApr180 = Number(BigInt(1800)) / 100;
+      const maxApr365 = Number(BigInt(3400)) / 100;
+      const maxAprFlexible = Number(BigInt(180)) / 100;
       // 硬编码的bonus值，按照图片中显示的数值
       const bonus30 = 0.00;  // 30天锁定期：+0.00%
       const bonus90 = 0.80;  // 90天锁定期：+0.80%
