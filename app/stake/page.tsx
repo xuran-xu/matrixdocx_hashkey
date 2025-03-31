@@ -7,7 +7,7 @@ import { useAccount, useBalance } from 'wagmi';
 import { useStakeLocked, useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
 import { useStakeFlexible } from '@/hooks/useFlexibleStaking';
 import { toast } from 'react-toastify';
-import { formatEther } from 'viem';
+import { formatEther, parseEther } from 'viem';
 import Link from 'next/link';
 
 export default function StakePage() {
@@ -252,8 +252,24 @@ export default function StakePage() {
   
   // Handle max button click
   const handleMaxClick = () => {
-    if (balanceData?.formatted) {
-      setStakeAmount(balanceData.formatted);
+    if (balanceData?.value && balanceData?.formatted) {
+      try {
+        // Reserve 2x average gas fee (approximately 0.001 ETH * 2)
+        const gasReserve = parseEther('0.002');
+        
+        // Ensure we have enough balance to subtract gas reserve
+        if (balanceData.value > gasReserve) {
+          const maxAmount = balanceData.value - gasReserve;
+          setStakeAmount(formatEther(maxAmount));
+        } else {
+          // If balance is too low, just set to 0
+          setStakeAmount('0');
+        }
+      } catch (error) {
+        console.error('Error calculating max amount:', error);
+        // Fallback to setting full balance
+        setStakeAmount(balanceData.formatted);
+      }
     }
   };
   
