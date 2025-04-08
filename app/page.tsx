@@ -361,11 +361,11 @@ export default function Home() {
             </div> */}
             
             {/* AddressBar component placed here */}
-            {/* <div className="mt-10 flex justify-center">
+            <div className="mt-10 flex justify-center">
               <div className="w-full max-w-2xl">
                 <AddressBar />
               </div>
-            </div> */}
+            </div>
           </div>
           
           {/* Stats Cards */}
