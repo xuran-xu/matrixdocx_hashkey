@@ -23,12 +23,20 @@ export default function Home() {
   const [serverTime, setServerTime] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLaunched, setIsLaunched] = useState(false);
+  const [isAppEnabled, setIsAppEnabled] = useState(false);
   
   // 结合API加载状态和初始加载状态
   const isLoadingCombined = initialLoading || apiLoading;
   
   // Beijing launch time - March 2, 2025 20:00:00
   const launchTime = new Date('2025-03-03T20:00:00+08:00').getTime();
+
+  // 检查环境变量
+  useEffect(() => {
+    const appEnabled = process.env.NEXT_PUBLIC_APP_ENABLED === 'true';
+    setIsAppEnabled(appEnabled);
+    console.log('App enabled from env:', appEnabled);
+  }, []);
 
   // 获取服务器时间并检查是否已经发布
   useEffect(() => {
@@ -216,8 +224,11 @@ export default function Home() {
     );
   }
   
-  // 未发布：显示倒计时
-  if (!isLaunched) {
+  // 未发布或应用未启用：显示倒计时
+  if (!isLaunched || !isAppEnabled) {
+    // 显示不同的消息，取决于是时间未到还是应用未启用
+    const message = "Launching on March 2, 2025 20:00 UTC+8"
+    
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
         <div className="container mx-auto px-4 py-8 max-w-4xl text-center">
@@ -230,37 +241,39 @@ export default function Home() {
             Get ready for the future of staking. Launching soon.
           </p>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center mb-10 md:mb-16 max-w-md md:max-w-2xl mx-auto">
-            <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
-              <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.days}</div>
-              <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Days</div>
+          {!isLaunched && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center mb-10 md:mb-16 max-w-md md:max-w-2xl mx-auto">
+              <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
+                <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.days}</div>
+                <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Days</div>
+              </div>
+              
+              <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
+                <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.hours}</div>
+                <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Hours</div>
+              </div>
+              
+              <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
+                <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.minutes}</div>
+                <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Minutes</div>
+              </div>
+              
+              <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
+                <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.seconds}</div>
+                <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Seconds</div>
+              </div>
             </div>
-            
-            <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
-              <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.hours}</div>
-              <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Hours</div>
-            </div>
-            
-            <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
-              <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.minutes}</div>
-              <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Minutes</div>
-            </div>
-            
-            <div className="bg-gray-800/50 backdrop-blur-md p-4 md:p-6 rounded-xl border border-gray-700 shadow-lg">
-              <div className="text-5xl md:text-6xl font-bold text-primary">{timeLeft.seconds}</div>
-              <div className="text-xs md:text-sm uppercase tracking-wider mt-1 md:mt-2 text-gray-400">Seconds</div>
-            </div>
-          </div>
+          )}
           
           <div className="text-base md:text-lg text-gray-400">
-            Launching on March 2, 2025 20:00 UTC+8
+            {message}
           </div>
         </div>
       </div>
     );
   }
   
-  // 已发布：显示主内容
+  // 已发布且应用已启用：显示主内容
   return (
     <MainLayout>
       <div className="min-h-screen text-white">

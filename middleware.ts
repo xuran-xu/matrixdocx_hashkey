@@ -6,9 +6,13 @@ export function middleware(request: NextRequest) {
   const launchTime = new Date('2025-03-03T20:00:00+08:00').getTime();
   const now = Date.now();
   
+  // 检查环境变量是否启用应用
+  const isAppEnabled = process.env.NEXT_PUBLIC_APP_ENABLED === 'true';
+  
   console.log('Current time:', new Date(now).toISOString());
   console.log('Launch time:', new Date(launchTime).toISOString());
   console.log('Is before launch:', now < launchTime);
+  console.log('App enabled:', isAppEnabled);
   console.log('Current path:', request.nextUrl.pathname);
   
   // 跳过API路由和资源文件
@@ -21,8 +25,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // 如果当前时间在发布时间之前，重定向到首页
-  if (now < launchTime) {
+  // 如果当前时间在发布时间之前或应用未启用，重定向到首页
+  if (now < launchTime || !isAppEnabled) {
     console.log('Redirecting to home page');
     const url = new URL('/', request.url);
     return NextResponse.redirect(url);
