@@ -5,8 +5,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Matrixdocx - 区块链生态系统',
-  description: '探索、连接并参与我们蓬勃发展的区块链生态系统',
+  title: 'Matrixdocx - Blockchain Ecosystem',
+  description: 'Explore, connect and participate in our thriving blockchain ecosystem',
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh">
+    <html lang="en">
       <body className={inter.variable + " font-sans"}>
         {children}
       </body>
