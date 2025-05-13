@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes coinSpill {
+  0% {
+    transform: translateY(-6px) translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(0) translateX(var(--spread));
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(6px) translateX(var(--spread));
+    opacity: 0;
+  }
+}
+
+.coin {
+  animation: coinSpill 1.8s ease-in-out infinite;
+}
+
+.coin-1 {
+  --spread: -4px; /* 向左散开 */
+  animation-delay: 0s;
+}
+
+.coin-2 {
+  --spread: 0px; /* 垂直下落 */
+  animation-delay: 0.2s;
+}
+
+.coin-3 {
+  --spread: 4px; /* 向右散开 */
+  animation-delay: 0.4s;
+}

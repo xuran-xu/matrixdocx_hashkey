@@ -1,30 +1,30 @@
-import { Chain } from 'wagmi'
-import { getDefaultWallets } from '@rainbow-me/rainbowkit'
+import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { Chain } from 'wagmi/chains';
+import { http } from 'viem';
 
-export const hashkeyTestnet = {
-  id: 133,
-  name: 'HashKey Chain Testnet',
-  network: 'hashkey-testnet',
+export const hashkeyChain = {
+  id: 177,
+  name: 'HashKey Chain',
   nativeCurrency: {
     decimals: 18,
     name: 'HSK',
     symbol: 'HSK',
   },
   rpcUrls: {
-    public: { http: ['https://hashkeychain-testnet.alt.technology'] },
-    default: { http: ['https://hashkeychain-testnet.alt.technology'] },
+    default: { http: ['https://mainnet.hsk.xyz'] },
+    public: { http: ['https://mainnet.hsk.xyz'] },
   },
   blockExplorers: {
-    default: { name: 'HashKey Explorer', url: 'https://hashkeychain-testnet-explorer.alt.technology' },
+    default: { name: 'HashKey Explorer', url: 'https://explorer.hsk.xyz' },
   },
-  testnet: true,
-} as const satisfies Chain
+} as const satisfies Chain;
 
-export const getWalletConnectors = (projectId: string, chains: Chain[]) => {
-  const { connectors } = getDefaultWallets({
-    appName: 'MatrixDocx HashKey',
-    projectId,
-    chains,
-  })
-  return connectors
-} 
+export const config = getDefaultConfig({
+  appName: 'HashKey Chain DApp',
+  projectId: '38a492ad0c37213a6fd017ba2fb50874',
+  chains: [hashkeyChain],
+  transports: {
+    [hashkeyChain.id]: http('https://mainnet.hsk.xyz'),
+  },
+  ssr: true,
+}); 

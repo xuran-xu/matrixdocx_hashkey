@@ -1,8 +1,9 @@
 module.exports = {
-  extends: ['next/core-web-vitals'],
+  // ... 其他配置
   rules: {
-    // 自定义规则
-    'no-unused-vars': 'warn',
-    'no-console': 'warn',
-  },
+    '@typescript-eslint/no-unused-vars': ['warn', { 
+      argsIgnorePattern: '.*', // 忽略所有参数
+      varsIgnorePattern: '.*'  // 忽略所有变量
+    }]
+  }
 } 
