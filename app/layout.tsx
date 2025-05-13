@@ -2,7 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
-import { getApolloClient } from '@/lib/apollo-client'
+// import { getApolloClient } from '@/lib/apollo-client'
 import { ApolloProvider } from '@/components/provider/ApolloProvider'
 
 const inter = Inter({ subsets: ['latin'] })

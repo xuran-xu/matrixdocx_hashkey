@@ -2,17 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import MainLayout from './main-layout';
-import { StakeType } from '@/types/contracts';
 import { formatBigInt } from '@/utils/format';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
-import { useStakingInfo, useAllStakingAPRs } from '@/hooks/useStakingContracts';
-import { useOldStakingInfo } from '@/hooks/useOldStakingContracts';
+import { useStakingInfo } from '@/hooks/useStakingContracts';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import Image from 'next/image';
-import AddressBar from '@/components/AddressBar';
-import StartStake from '@/components/app/StartStake';
 
 export default function Home() {
   // 添加本地loading状态，初始为true
@@ -21,8 +16,6 @@ export default function Home() {
   const [debouncedAmount, setDebouncedAmount] = useState(simulatedAmount);
   const { address: _address, isConnected } = useAccount();
   const { totalStaked, stakingStats, exchangeRate, isLoading: apiLoading } = useStakingInfo(debouncedAmount);
-  const { totalStaked: oldTotalStaked, isLoading: oldApiLoading } = useOldStakingInfo(debouncedAmount);
-  const { estimatedAPRs, maxAPRs, isLoading: aprsLoading } = useAllStakingAPRs(debouncedAmount);
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [serverTime, setServerTime] = useState<Date | null>(null);
@@ -32,7 +25,7 @@ export default function Home() {
   const [aprDataSource, setAprDataSource] = useState<'contract' | 'loading'>('loading');
   
   // 结合API加载状态和初始加载状态
-  const isLoadingCombined = initialLoading || apiLoading || aprsLoading;
+  const isLoadingCombined = initialLoading || apiLoading;
   
   // Beijing launch time - March 3, 2025 20:00:00
   const launchTime = new Date('2025-03-01T20:00:00+08:00').getTime();
@@ -115,16 +108,15 @@ export default function Home() {
   
   // 当数据加载完成后，关闭初始加载状态
   useEffect(() => {
-    if (!apiLoading && totalStaked !== undefined && oldTotalStaked !== undefined) {
+    if (!apiLoading && totalStaked !== undefined) {
       // 添加一个小延迟，确保UI平滑过渡
       const timer = setTimeout(() => {
         setInitialLoading(false);
       }, 100);
       console.log('Total staked:', totalStaked);
-      console.log('Old total staked:', oldTotalStaked);
       return () => clearTimeout(timer);
     }
-  }, [apiLoading, totalStaked, oldTotalStaked]);
+  }, [apiLoading, totalStaked]);
   
   // Add debounce processing
   useEffect(() => {
@@ -135,130 +127,6 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [simulatedAmount]);
   
-  // Update APR data source when loading state changes
-  useEffect(() => {
-    if (!aprsLoading && estimatedAPRs && maxAPRs) {
-      setAprDataSource('contract');
-    } else {
-      setAprDataSource('loading');
-    }
-  }, [aprsLoading, estimatedAPRs, maxAPRs]);
-  
-  // Extract APR and reward information from contract data
-  const stakingOptions = React.useMemo(() => {
-    // If data is still loading, return empty array
-    if (aprsLoading || !estimatedAPRs || !maxAPRs) {
-      console.log('APR data is still loading');
-      setAprDataSource('loading');
-      return [];
-    }
-    
-    try {
-      console.log('Contract APR data available:', {
-        estimatedAPRs: estimatedAPRs.map(apr => apr.toString()),
-        maxAPRs: maxAPRs.map(apr => apr.toString())
-      });
-      
-      setAprDataSource('contract');
-      
-      // Calculate formatted APR values
-      const apr30 = Number(estimatedAPRs[0] || BigInt(0)) / 100;
-      const apr90 = Number(estimatedAPRs[1] || BigInt(0)) / 100;
-      const apr180 = Number(estimatedAPRs[2] || BigInt(0)) / 100;
-      const apr365 = Number(estimatedAPRs[3] || BigInt(0)) / 100;
-      const aprFlexible = Number(estimatedAPRs[4] || BigInt(0)) / 100;
-      
-      const maxApr30 = Number(BigInt(360)) / 100;
-      const maxApr90 = Number(BigInt(1000)) / 100;
-      const maxApr180 = Number(BigInt(1800)) / 100;
-      const maxApr365 = Number(BigInt(3400)) / 100;
-      const maxAprFlexible = Number(BigInt(180)) / 100;
-      // 硬编码的bonus值，按照图片中显示的数值
-      const bonus30 = 0.00;  // 30天锁定期：+0.00%
-      const bonus90 = 0.80;  // 90天锁定期：+0.80%
-      const bonus180 = 2.00; // 180天锁定期：+2.00%
-      const bonus365 = 4.00; // 365天锁定期：+4.00%
-      
-      console.log('Using hardcoded bonus values:', {
-        '30 days': bonus30.toFixed(2) + '%',
-        '90 days': bonus90.toFixed(2) + '%',
-        '180 days': bonus180.toFixed(2) + '%',
-        '365 days': bonus365.toFixed(2) + '%'
-      });
-      
-      console.log('Contract APR values (formatted):', {
-        '30 days': {
-          estimated: apr30.toFixed(2) + '%',
-          max: maxApr30.toFixed(2) + '%'
-        },
-        '90 days': {
-          estimated: apr90.toFixed(2) + '%',
-          max: maxApr90.toFixed(2) + '%'
-        },
-        '180 days': {
-          estimated: apr180.toFixed(2) + '%',
-          max: maxApr180.toFixed(2) + '%'
-        },
-        '365 days': {
-          estimated: apr365.toFixed(2) + '%',
-          max: maxApr365.toFixed(2) + '%'
-        }
-      });
-      
-      // Extract data and calculate
-      return [
-        {
-          title: 'Flexible',
-          duration: 0,
-          durationDisplay: 'Flexible',
-          apr: aprFlexible,
-          bonus: bonus30,
-          maxApr: maxAprFlexible,
-          stakeType: StakeType.FLEXIBLE
-        },
-        {
-          title: '30 Day Lock',
-          duration: 30,
-          durationDisplay: '30 days',
-          apr: apr30,
-          bonus: bonus30,
-          maxApr: maxApr30,
-          stakeType: StakeType.FIXED_30_DAYS
-        },
-        {
-          title: '90 Day Lock',
-          duration: 90,
-          durationDisplay: '90 days',
-          apr: apr90,
-          bonus: bonus90,
-          maxApr: maxApr90,
-          stakeType: StakeType.FIXED_90_DAYS
-        },
-        {
-          title: '180 Day Lock',
-          duration: 180,
-          durationDisplay: '180 days',
-          apr: apr180,
-          bonus: bonus180,
-          maxApr: maxApr180,
-          stakeType: StakeType.FIXED_180_DAYS
-        },
-        {
-          title: '365 Day Lock',
-          duration: 365,
-          durationDisplay: '365 days',
-          apr: apr365,
-          bonus: bonus365,
-          maxApr: maxApr365,
-          stakeType: StakeType.FIXED_365_DAYS
-        }
-      ];
-    } catch (error) {
-      console.error('Error processing APR data:', error);
-      setAprDataSource('loading');
-      return []; // Return empty array on error
-    }
-  }, [estimatedAPRs, maxAPRs, aprsLoading]);
   
   // 显示加载状态
   if (isLoading) {
@@ -343,29 +211,8 @@ export default function Home() {
           <div className="text-center mb-16">
             <h1 className="text-5xl font-light text-white mb-6 font-sora">HashKey Chain Staking</h1>
             <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              Securely stake your HSK tokens and earn passive income with competitive APR
+              _address: { _address }
             </p>
-            
-            {/* Call to action button */}
-            <StartStake />
-            {/* <div className="mt-10">
-              <Link 
-                href="/stake" 
-                className="inline-flex items-center px-8 py-4 rounded-xl bg-primary/80 text-white hover:bg-primary transition-colors text-lg font-medium shadow-lg hover:shadow-xl"
-              >
-                Start Staking
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
-            </div> */}
-            
-            {/* AddressBar component placed here */}
-            <div className="mt-10 flex justify-center">
-              <div className="w-full max-w-2xl">
-                <AddressBar />
-              </div>
-            </div>
           </div>
           
           {/* Stats Cards */}
@@ -385,179 +232,11 @@ export default function Home() {
               ) : (
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-light tracking-tight text-white">
-                    {typeof totalStaked === 'bigint' ? formatBigInt(totalStaked + oldTotalStaked) : '0'}
+                    {typeof totalStaked === 'bigint' ? formatBigInt(totalStaked) : '0'}
                   </span>
                   <span className="text-lg font-light text-slate-400">HSK</span>
                 </div>
               )}
-            </div>
-
-            {/* Exchange Rate Card */}
-            {/* <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 transition-all hover:border-primary/30 hover:bg-slate-800/80">
-              <div className="flex items-center gap-2 mb-4">
-                <svg className="w-6 h-6 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h12M3 12h8m-8 5h16" />
-                </svg>
-                <h3 className="text-sm font-medium text-slate-300">Current Rate</h3>
-                <div className="tooltip tooltip-right" data-tip="Rate increases as rewards accumulate">
-                  <svg className="w-4 h-4 text-primary/40 hover:text-primary/60 transition-colors cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-              {isLoadingCombined ? (
-                <div className="animate-pulse flex items-center">
-                  <div className="h-8 bg-slate-700 rounded w-8 mr-2"></div>
-                  <div className="h-8 bg-slate-700 rounded w-16 mx-2"></div>
-                  <div className="h-8 bg-slate-700 rounded w-24 ml-2"></div>
-                </div>
-              ) : (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-light tracking-tight text-white">1</span>
-                  <span className="text-lg font-light text-slate-400">stHSK</span>
-                  <span className="text-slate-500">=</span>
-                  <span className="text-3xl font-light tracking-tight text-white">
-                    {typeof exchangeRate === 'bigint' ? formatBigInt(exchangeRate) : '1'}
-                  </span>
-                  <span className="text-lg font-light text-slate-400">HSK</span>
-                </div>
-              )}
-            </div> */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 transition-all hover:border-primary/30 hover:bg-slate-800/80">
-              <div className="flex items-center gap-2 mb-4">
-                <svg className="w-6 h-6 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h12M3 12h8m-8 5h16" />
-                </svg>
-                <h3 className="text-sm font-medium text-slate-300">Max APY</h3>
-                <div className="tooltip tooltip-right" data-tip="Rate increases as rewards accumulate">
-                  <svg className="w-4 h-4 text-primary/40 hover:text-primary/60 transition-colors cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-              {isLoadingCombined ? (
-                <div className="animate-pulse">
-                  <div className="h-8 bg-slate-700 rounded w-24"></div>
-                </div>
-              ) : (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-light text-slate-400">Up to</span>
-                  <span className="text-4xl font-light tracking-tight text-green-500">36</span>
-                  <span className="text-lg font-light text-slate-400">%</span>
-                </div>
-              )}
-            </div>
-
-
-            {/* Reward Interval Card */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 transition-all hover:border-primary/30 hover:bg-slate-800/80">
-              <div className="flex items-center gap-2 mb-4">
-                <svg className="w-6 h-6 text-primary/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h3 className="text-sm font-medium text-slate-300">Reward Interval</h3>
-              </div>
-              {isLoadingCombined ? (
-                <div className="animate-pulse">
-                  <div className="h-8 bg-slate-700 rounded w-24"></div>
-                </div>
-              ) : (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-light tracking-tight text-white">1 Block</span>
-                  {/*  这里要修改！！！ */}
-                  {/* <span className="text-3xl font-light tracking-tight text-green-500">{}</span>
-                  <span className="text-3xl font-light tracking-tight text-white">hsk</span> */}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {/* Staking Options Section */}
-        <div className="container mx-auto px-4 py-16">
-          <h2 className="text-3xl font-light mb-10 text-center text-white">Staking Options</h2>
-          <div className="flex justify-center mb-8">
-            {renderDataSourceIndicator()}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-16">
-            {stakingOptions.map((option, index) => (
-              <div key={index} className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden hover:border-primary/30 transition-all">
-                <div className="p-6 border-b border-slate-700/50 text-center">
-                  <h3 className="text-xl font-medium text-white">{option.title}</h3>
-                </div>
-                
-                <div className="p-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-400">Duration</span>
-                    <span className="text-white font-medium">{option.durationDisplay}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-400">Current APY</span>
-                    <span className="text-cyan-400 font-medium text-xl">{option.apr.toFixed(2)}%</span>
-                  </div>
-                  
-                  {/* <div className="flex justify-between items-center">
-                    <span className="text-slate-400">Lock Reward</span>
-                    {option.bonus > 0 ? (
-                      <span className="text-emerald-400 font-medium">{option.bonus.toFixed(2)}%</span>
-                    ) : (
-                      <span className="text-slate-400">0.00%</span>
-                    )}
-                  </div> */}
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-400 ">Max APY</span>
-                    <span className="text-cyan-400 font-medium text-xl">{option.maxApr.toFixed(2)}%</span>
-                  </div>
-                </div>
-                
-                <div className="p-6 border-t border-slate-700/50">
-                  <Link 
-                    href={`/stake?type=${option.stakeType}`} 
-                    className="block w-full py-3 text-center bg-primary/80 text-white rounded-lg hover:bg-primary transition-colors"
-                  >
-                    Select
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Features Section */}
-          <div className="max-w-4xl mx-auto mt-20">
-            <h2 className="text-3xl font-light mb-10 text-center text-white">Key Benefits</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-primary/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-medium text-white mb-2">Competitive APR</h3>
-                <p className="text-slate-400">Earn up to 36% annual returns on your staked HSK tokens</p>
-              </div>
-              
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-primary/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-medium text-white mb-2">Security First</h3>
-                <p className="text-slate-400">Your assets are protected by industry-leading security protocols</p>
-              </div>
-              
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-primary/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-medium text-white mb-2">Auto-Compounding</h3>
-                <p className="text-slate-400">Rewards automatically accumulate to maximize your returns</p>
-              </div>
             </div>
           </div>
         </div>
