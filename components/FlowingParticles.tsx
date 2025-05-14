@@ -54,8 +54,8 @@ export default function FlowingParticles() {
           x: Math.random() * canvas.width,
           y: targetY + Math.random() * distributionHeight,
           size: Math.random() * 2 + 0.8, // 更大的粒子
-          speedX: (Math.random() * 0.2 - 0.1) * 0.5, // 水平移动
-          speedY: (Math.random() * 0.2 - 0.1) * 0.4, // 垂直移动
+          speedX: (Math.random() * 0.2 - 0.1) * 2, // 增加水平移动速度
+          speedY: (Math.random() * 0.2 - 0.1) * 1.5, // 增加垂直移动速度
           opacity: Math.random() * 0.4 + 0.2, // 更高的不透明度
           color: goldColors[Math.floor(Math.random() * goldColors.length)]
         });
@@ -115,4 +115,4 @@ export default function FlowingParticles() {
       style={{ pointerEvents: 'none' }}
     />
   );
-} 
+}

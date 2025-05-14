@@ -17,10 +17,10 @@ export default function NavBar() {
 
   return (
     <nav className="bg-base-300/80 backdrop-blur border-b border-neutral py-3 fixed top-0 left-0 right-0 z-50">
-      <div className="container mx-auto px-4 flex justify-between items-center">
-        <div className="flex items-center space-x-8">
+      <div className="container mx-auto pl-0 pr-1 flex justify-between items-center">
+        <div className="flex items-center space-x-0">
           <Link href="/" className="flex items-center">
-            <div className="relative h-10 w-40">
+            <div className="relative h-12 w-48">
               <Image
                 src="/H-logo.png"
                 alt="HashKey Chain Logo"
