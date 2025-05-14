@@ -1,16 +1,18 @@
 'use client';
 
 import React from 'react';
-import NavBar from '../components/NavBar';
-import Footer from '../components/Footer';
+import NavBar from '@/components/NavBar';
+import Footer from '@/components/Footer';
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+interface MainLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen bg-base-100 flex flex-col">
       <NavBar />
-      <main className="flex-1 pt-16 pb-24">
-        {children}
-      </main>
+      <main className="pt-16 pb-24 flex-grow">{children}</main>
       <Footer />
     </div>
   );

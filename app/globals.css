@@ -3,14 +3,34 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: theme('colors.base-100');
+  --foreground: theme('colors.base-content');
+  --gold-color: #E4BE7D;
+}
+
+/* 强制覆盖和重置一些可能被修改的样式 */
+@layer utilities {
+  .text-gold {
+    color: #E4BE7D !important;
+  }
+  
+  .bg-gold {
+    background-color: #E4BE7D !important;
+  }
+  
+  .hover\:bg-gold:hover {
+    background-color: #D7B06E !important;
+  }
+  
+  .border-gold {
+    border-color: #E4BE7D !important;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: theme('colors.base-100');
+    --foreground: theme('colors.base-content');
   }
 }
 
