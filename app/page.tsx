@@ -5,6 +5,7 @@ import MainLayout from './main-layout';
 import StatsCard from '../components/StatsCard';
 import StakingForm from '../components/StakingForm';
 import StakingHistory from '../components/StakingHistory';
+import FlowingParticles from '../components/FlowingParticles';
 import Link from 'next/link';
 
 export default function Home() {
@@ -18,21 +19,31 @@ export default function Home() {
   return (
     <MainLayout>
       {/* Hero Section */}
-      <section className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#E4BE7D]/20 to-[#D7B06E]/20 z-0"></div>
+      <section className="relative py-20 overflow-hidden min-h-[90vh] flex items-center">
+        {/* Flowing sand particles background */}
+        <FlowingParticles />
+        
+        {/* Gradient overlay - removed to avoid covering particles */}
+        
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold text-gold mb-6">
-              Stake Your Assets on HashKey Chain
+            <h1 className="text-4xl md:text-5xl font-bold text-gold mb-6 drop-shadow-lg">
+              Begin Your Digital Gold Era
             </h1>
-            <p className="text-xl text-base-content mb-8">
-              Participate in the HashKey ecosystem safely and earn rewards
+            <p className="text-xl text-base-content mb-8 drop-shadow">
+              Hold gold effortlessly, earn rewards securely
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/stake" className="bg-gold hover:bg-gold text-black py-3 px-8 rounded-btn font-medium">
-                Start Staking
+              <Link href="/stake" className="btn-staking py-3 px-8 font-medium">
+                <span>Start Staking</span>
               </Link>
-              <a href="https://explorer.hsk.xyz" target="_blank" rel="noopener noreferrer" className="bg-transparent border border-neutral hover:border-gold text-base-content py-3 px-8 rounded-btn font-medium">
+              <a 
+                href="https://explorer.hsk.xyz" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="bg-transparent border border-neutral hover:border-gold text-base-content py-3 px-8 rounded-[0.5rem] font-medium
+                  transition-all duration-300 hover:shadow-md"
+              >
                 Learn More
               </a>
             </div>

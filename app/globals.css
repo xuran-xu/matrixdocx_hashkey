@@ -5,8 +5,8 @@
    so this @plugin line is not needed and should be removed. */
 
 :root {
-  --background: oklch(var(--b1)); /* --b1 is typically base-100 from DaisyUI */
-  --foreground: oklch(var(--bc)); /* --bc is typically base-content from DaisyUI */
+  --background: theme('colors.base-100');
+  --foreground: theme('colors.base-content');
   --gold-color: #E4BE7D; /* Main gold color */
   --gold-color-hover: #D7B06E; /* Gold for hover states, adjust as needed */
 }
@@ -14,19 +14,19 @@
 /* 强制覆盖和重置一些可能被修改的样式 */
 @layer utilities {
   .text-gold {
-    color: var(--gold-color) !important;
+    color: #E4BE7D !important;
   }
   
   .bg-gold {
-    background-color: var(--gold-color) !important;
+    background-color: #E4BE7D !important;
   }
   
   .hover\:bg-gold:hover {
-    background-color: var(--gold-color-hover) !important;
+    background-color: #D7B06E !important;
   }
   
   .border-gold {
-    border-color: var(--gold-color) !important;
+    border-color: #E4BE7D !important;
   }
 }
 
@@ -39,15 +39,15 @@
 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(var(--b1));
-    --foreground: oklch(var(--bc));
+    --background: theme('colors.base-100');
+    --foreground: theme('colors.base-content');
   }
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: theme('fontFamily.sora'), Arial, Helvetica, sans-serif; /* Optionally use your sora font */
+  font-family: Arial, Helvetica, sans-serif; /* Optionally use your sora font */
 }
 
 @keyframes coinSpill {
@@ -82,4 +82,39 @@ body {
 .coin-3 {
   --spread: 4px; /* 向右散开 */
   animation-delay: 0.4s;
+}
+
+/* Custom button styles with field-like rounded corners */
+.btn-staking {
+  @apply rounded-[0.5rem] transition-all duration-300;
+  background: theme('colors.accent');
+  color: #000;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-staking:hover {
+  background: theme('colors.primary');
+  box-shadow: 0 4px 12px rgba(228, 190, 125, 0.3);
+}
+
+.btn-staking::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, theme('colors.accent'), theme('colors.primary'));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-staking:hover::before {
+  opacity: 1;
+}
+
+.btn-staking > span {
+  position: relative;
+  z-index: 10;
 }

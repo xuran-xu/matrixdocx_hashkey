@@ -3,6 +3,7 @@
 import React from 'react';
 import { ConnectKitButton } from 'connectkit';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 export default function NavBar() {
@@ -18,8 +19,16 @@ export default function NavBar() {
     <nav className="bg-base-300/80 backdrop-blur border-b border-neutral py-3 fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center space-x-8">
-          <Link href="/" className="text-gold font-bold text-xl">
-            HashKey Chain X
+          <Link href="/" className="flex items-center">
+            <div className="relative h-10 w-40">
+              <Image
+                src="/Chain-横-白字.svg"
+                alt="HashKey Chain Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
           </Link>
           
           <div className="hidden md:flex space-x-6">
