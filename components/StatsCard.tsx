@@ -2,16 +2,32 @@
 
 import React from 'react';
 
-export interface StatsCardProps {
+interface StatsCardProps {
   label: string;
   value: string;
+  highlight?: boolean;
+  border?: string;
 }
 
-export default function StatsCard({ label, value }: StatsCardProps) {
+const StatsCard: React.FC<StatsCardProps> = ({ label, value, highlight = false, border }) => {
+  let borderClass = '';
+  
+  if (highlight) {
+    borderClass = 'border-primary border-2';
+  } else if (border === 'accent') {
+    borderClass = 'border-accent border-opacity-60';
+  } else {
+    borderClass = 'border-neutral';
+  }
+
   return (
-    <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700/50 shadow-lg">
-      <h3 className="text-gray-400 text-sm font-semibold mb-2">{label}</h3>
-      <div className="text-3xl font-bold text-white">{value}</div>
+    <div 
+      className={`p-6 rounded-box flex flex-col items-center text-center border ${borderClass} bg-base-300 bg-opacity-50`}
+    >
+      <h3 className="text-lg font-medium text-gold mb-2">{label}</h3>
+      <p className={`text-2xl font-bold ${highlight ? 'text-primary text-3xl' : 'text-base-content'}`}>{value}</p>
     </div>
   );
-}
+};
+
+export default StatsCard;

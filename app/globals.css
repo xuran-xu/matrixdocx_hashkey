@@ -28,6 +28,13 @@
   .border-gold {
     border-color: #E4BE7D !important;
   }
+  
+  /* 金色光芒文字效果 */
+  .gold-shine-text {
+    color: theme('colors.primary');
+    text-shadow: 0 0 5px rgba(228, 190, 125, 0.5),
+                 0 0 10px rgba(228, 190, 125, 0.3);
+  }
 }
 
 /*
@@ -117,4 +124,25 @@ body {
 .btn-staking > span {
   position: relative;
   z-index: 10;
+}
+
+/* Token Address Box Styles */
+.token-address-box {
+  @apply bg-base-300 bg-opacity-50 backdrop-blur-sm rounded-xl border border-neutral p-4
+         transition-all hover:border-primary hover:border-opacity-30 hover:bg-base-300 hover:bg-opacity-80 text-left
+         mt-8 max-w-lg mx-auto;
+}
+
+.token-address-icon {
+  @apply w-8 h-8 rounded-full bg-primary bg-opacity-20 flex items-center justify-center mr-3;
+}
+
+.token-address-copy-button {
+  @apply p-1 rounded-md hover:bg-neutral transition-colors cursor-pointer;
+}
+
+.token-address-tooltip {
+  @apply absolute bottom-full right-0 mb-1 hidden group-hover:inline
+         bg-base-300 text-base-content text-xs rounded py-1 px-2
+         whitespace-nowrap border border-neutral;
 }

@@ -34,7 +34,8 @@ export default function FlowingParticles() {
     // Initialize particles
     const initParticles = () => {
       particles.current = [];
-      const particleCount = Math.min(Math.floor(window.innerWidth * window.innerHeight / 5000), 400);
+      // 增加粒子数量
+      const particleCount = Math.min(Math.floor(window.innerWidth * window.innerHeight / 20000), 150);
       
       for (let i = 0; i < particleCount; i++) {
         const goldColors = [
@@ -44,13 +45,18 @@ export default function FlowingParticles() {
           '#BCA372', // Muted gold
         ];
         
+        // 将粒子集中在"Hold gold effortlessly, earn rewards securely"下方区域
+        // 根据页面中的位置，这大约是页面高度的30%-40%处
+        const targetY = canvas.height * 0.35; // 目标文本位置
+        const distributionHeight = canvas.height * 0.3; // 更大的分布高度范围
+        
         particles.current.push({
           x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          size: Math.random() * 4 + 2,
-          speedX: Math.random() * 0.5 - 0.25,
-          speedY: Math.random() * 0.3 - 0.15,
-          opacity: Math.random() * 0.7 + 0.3,
+          y: targetY + Math.random() * distributionHeight,
+          size: Math.random() * 2 + 0.8, // 更大的粒子
+          speedX: (Math.random() * 0.2 - 0.1) * 0.5, // 水平移动
+          speedY: (Math.random() * 0.2 - 0.1) * 0.4, // 垂直移动
+          opacity: Math.random() * 0.4 + 0.2, // 更高的不透明度
           color: goldColors[Math.floor(Math.random() * goldColors.length)]
         });
       }
@@ -58,37 +64,33 @@ export default function FlowingParticles() {
 
     // Animation loop
     const animate = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       // Update and draw particles
       particles.current.forEach(particle => {
-        // Update position with flowing effect
-        const time = Date.now() * 0.001;
-        const flowX = Math.sin(time + particle.y * 0.01) * 0.3;
+        // 简单的漂浮效果
+        particle.x += particle.speedX;
+        particle.y += particle.speedY;
         
-        particle.x += particle.speedX + flowX;
-        particle.y += particle.speedY - 0.1; // Slow upward drift
+        // 当粒子移出指定区域，将其重置
+        if (particle.x < 0 || particle.x > canvas.width) {
+          particle.x = Math.random() * canvas.width;
+        }
         
-        // Reset particles that go off-screen
-        if (particle.x < 0) particle.x = canvas.width;
-        if (particle.x > canvas.width) particle.x = 0;
-        if (particle.y < 0) particle.y = canvas.height;
-        if (particle.y > canvas.height) particle.y = 0;
+        const targetY = canvas.height * 0.35;
+        const distributionHeight = canvas.height * 0.3;
+        if (particle.y < targetY || particle.y > targetY + distributionHeight) {
+          particle.y = targetY + Math.random() * distributionHeight;
+        }
         
-        // Draw the particle with glow effect
-        ctx.save();
+        // 绘制粒子，确保它们可见
         ctx.beginPath();
-        
-        // 添加模糊效果
-        ctx.shadowBlur = 6;
-        ctx.shadowColor = particle.color;
-        
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        
+        // 固定透明度格式
         const alpha = Math.floor(particle.opacity * 255).toString(16).padStart(2, '0');
-        ctx.fillStyle = particle.color + alpha;
+        ctx.fillStyle = `${particle.color}${alpha}`;
         ctx.fill();
-        ctx.restore();
       });
       
       animationRef.current = requestAnimationFrame(animate);
@@ -109,7 +111,7 @@ export default function FlowingParticles() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 z-0 opacity-50"
+      className="absolute inset-0 z-0"
       style={{ pointerEvents: 'none' }}
     />
   );

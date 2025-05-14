@@ -22,7 +22,7 @@ export default function NavBar() {
           <Link href="/" className="flex items-center">
             <div className="relative h-10 w-40">
               <Image
-                src="/Chain-横-白字.svg"
+                src="/H-logo.png"
                 alt="HashKey Chain Logo"
                 fill
                 className="object-contain"
