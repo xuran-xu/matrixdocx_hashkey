@@ -1,43 +1,53 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* DaisyUI is configured as a Tailwind plugin in tailwind.config.ts,
+   so this @plugin line is not needed and should be removed. */
 
 :root {
-  --background: theme('colors.base-100');
-  --foreground: theme('colors.base-content');
-  --gold-color: #E4BE7D;
+  --background: oklch(var(--b1)); /* --b1 is typically base-100 from DaisyUI */
+  --foreground: oklch(var(--bc)); /* --bc is typically base-content from DaisyUI */
+  --gold-color: #E4BE7D; /* Main gold color */
+  --gold-color-hover: #D7B06E; /* Gold for hover states, adjust as needed */
 }
 
 /* 强制覆盖和重置一些可能被修改的样式 */
 @layer utilities {
   .text-gold {
-    color: #E4BE7D !important;
+    color: var(--gold-color) !important;
   }
   
   .bg-gold {
-    background-color: #E4BE7D !important;
+    background-color: var(--gold-color) !important;
   }
   
   .hover\:bg-gold:hover {
-    background-color: #D7B06E !important;
+    background-color: var(--gold-color-hover) !important;
   }
   
   .border-gold {
-    border-color: #E4BE7D !important;
+    border-color: var(--gold-color) !important;
   }
 }
 
+/*
+  Your tailwind.config.ts has `daisyui: { darkTheme: "dark", base: true }`.
+  This means DaisyUI should automatically apply the 'dark' theme variables.
+  This @media block might be redundant for --background and --foreground if DaisyUI
+  is already setting --b1 and --bc from the dark theme.
+  If you keep it for explicit override, ensure it uses the correct oklch syntax.
+*/
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: theme('colors.base-100');
-    --foreground: theme('colors.base-content');
+    --background: oklch(var(--b1));
+    --foreground: oklch(var(--bc));
   }
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: theme('fontFamily.sora'), Arial, Helvetica, sans-serif; /* Optionally use your sora font */
 }
 
 @keyframes coinSpill {
