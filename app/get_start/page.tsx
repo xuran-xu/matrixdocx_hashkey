@@ -57,12 +57,12 @@ export default function GetStart() {
   return (
     <MainLayout>
       {/* Main container with gradient background */}
-      <div className="min-h-screen bg-base-200 pt-20 pb-20">
+      <div className="min-h-screen bg-base-200 pt-20 pb-20 font-sora">
         <div className="container mx-auto px-4 relative">
           {/* Step 1: Buy XAUM Section */}
           <div className="relative">
             {/* Connection line between step numbers - 使用固定颜色，精确控制高度 */}
-            <div className="absolute left-5 top-[60px] w-[2px] h-[calc(100%+40px)] bg-primary"></div>
+            <div className="absolute left-5 top-[60px] w-[2px] h-[calc(100%+40px)] bg-gold opacity-50"></div>
             
             <div className="mb-16"> {/* 减小底部间距 */}
               <div className="flex items-center gap-4 mb-8 relative z-10">
@@ -79,12 +79,12 @@ export default function GetStart() {
               </div>
 
               {/* Exchange Form Card */}
-              <div className="bg-base-300 rounded-box p-8 max-w-2xl mx-auto">
+              <div className="bg-base-300 rounded-box p-8 max-w-2xl mx-auto shadow-lg border border-primary/20">
                 {!isWalletConnected ? (
                   <div className="text-center py-8">
                     <p className="text-lg mb-4">Please connect your wallet to continue</p>
                     <button 
-                      className="btn btn-primary"
+                      className="btn btn-primary hover:bg-primary/90 transition-all duration-300"
                       onClick={() => setIsWalletConnected(true)}
                     >
                       Connect Wallet
@@ -104,7 +104,7 @@ export default function GetStart() {
                           <input
                             type="number"
                             placeholder="0.00"
-                            className="input input-bordered w-full"
+                            className="input input-bordered w-full bg-base-200 focus:border-primary"
                             value={inputAmount}
                             onChange={(e) => setInputAmount(e.target.value)}
                           />
@@ -133,7 +133,7 @@ export default function GetStart() {
 
                       {/* Action Buttons */}
                       <div className="space-y-4 pt-4">
-                        <button className="btn btn-primary w-full">
+                        <button className="btn btn-primary w-full hover:brightness-110 transition-all">
                           Approve HSK
                         </button>
                         <button className="btn btn-accent w-full">
@@ -168,14 +168,14 @@ export default function GetStart() {
               <div className="space-y-4">
                 {/* Base Option */}
                 <div 
-                  className={`bg-base-300 rounded-lg p-6 border-2 ${
-                    selectedOption === 'base' ? 'border-primary' : 'border-transparent'
-                  } hover:border-primary cursor-pointer transition-all`}
+                  className={`bg-base-300 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
+                    selectedOption === 'base' ? 'border-primary shadow-lg' : 'border-transparent'
+                  } cursor-pointer`}
                   onClick={() => setSelectedOption('base')}
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-xl font-bold">Base Holding</h3>
+                      <h3 className="text-xl font-bold text-primary">Base Holding</h3>
                       <p className="text-base-content/70">Basic XAUM holding rewards</p>
                     </div>
                     <div className="text-right">
@@ -191,9 +191,9 @@ export default function GetStart() {
 
                 {/* HyperIndex Option */}
                 <div 
-                  className={`bg-base-300 rounded-lg p-6 border-2 ${
-                    selectedOption === 'hyperindex' ? 'border-primary' : 'border-transparent'
-                  } hover:border-primary cursor-pointer transition-all`}
+                  className={`bg-base-300 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
+                    selectedOption === 'hyperindex' ? 'border-primary shadow-lg' : 'border-transparent'
+                  } cursor-pointer`}
                   onClick={() => setSelectedOption('hyperindex')}
                 >
                   <div className="flex justify-between items-center">
@@ -214,9 +214,9 @@ export default function GetStart() {
 
                 {/* DODO Option */}
                 <div 
-                  className={`bg-base-300 rounded-lg p-6 border-2 ${
-                    selectedOption === 'dodo' ? 'border-primary' : 'border-transparent'
-                  } hover:border-primary cursor-pointer transition-all`}
+                  className={`bg-base-300 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
+                    selectedOption === 'dodo' ? 'border-primary shadow-lg' : 'border-transparent'
+                  } cursor-pointer`}
                   onClick={() => setSelectedOption('dodo')}
                 >
                   <div className="flex justify-between items-center">
@@ -237,9 +237,9 @@ export default function GetStart() {
 
                 {/* Lending Option */}
                 <div 
-                  className={`bg-base-300 rounded-lg p-6 border-2 ${
-                    selectedOption === 'lending' ? 'border-primary' : 'border-transparent'
-                  } hover:border-primary cursor-pointer transition-all`}
+                  className={`bg-base-300 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
+                    selectedOption === 'lending' ? 'border-primary shadow-lg' : 'border-transparent'
+                  } cursor-pointer`}
                   onClick={() => setSelectedOption('lending')}
                 >
                   <div className="flex justify-between items-center">
@@ -261,7 +261,7 @@ export default function GetStart() {
 
               {/* Right side - Staking Operation */}
               {selectedOption !== 'base' && (
-                <div className="bg-base-300 rounded-lg p-6">
+                <div className="bg-base-300 rounded-box p-8 shadow-lg border border-primary/20">
                   <div className="space-y-6">
                     {/* Staking Amount Input */}
                     <div className="form-control">
@@ -337,7 +337,7 @@ export default function GetStart() {
 
                     {/* Action Button */}
                     <button 
-                      className="btn btn-primary w-full"
+                      className="btn btn-primary w-full font-medium hover:brightness-110 transition-all"
                       disabled={!stakingAmount || Number(stakingAmount) === 0}
                     >
                       Supply

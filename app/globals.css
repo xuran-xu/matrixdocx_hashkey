@@ -57,38 +57,57 @@ body {
   font-family: Arial, Helvetica, sans-serif; /* Optionally use your sora font */
 }
 
-@keyframes coinSpill {
+@keyframes borderFlow {
   0% {
-    transform: translateY(-6px) translateX(0);
-    opacity: 1;
+    background-position: 0 0;
   }
   50% {
-    transform: translateY(0) translateX(var(--spread));
-    opacity: 0.8;
+    background-position: 300% 0;
   }
   100% {
-    transform: translateY(6px) translateX(var(--spread));
-    opacity: 0;
+    background-position: 600% 0;
   }
 }
 
-.coin {
-  animation: coinSpill 1.8s ease-in-out infinite;
+.card-border {
+  position: relative;
+  border: 1px solid theme('colors.primary');
+  background-clip: padding-box;
+  transition: all 0.3s ease;
 }
 
-.coin-1 {
-  --spread: -4px; /* 向左散开 */
-  animation-delay: 0s;
+.card-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    90deg,
+    theme('colors.primary'),
+    theme('colors.primary')/30%,
+    theme('colors.primary'),
+    theme('colors.primary')/30%,
+    theme('colors.primary')
+  );
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
-.coin-2 {
-  --spread: 0px; /* 垂直下落 */
-  animation-delay: 0.2s;
+.card-border:hover {
+  border-color: transparent;
 }
 
-.coin-3 {
-  --spread: 4px; /* 向右散开 */
-  animation-delay: 0.4s;
+.card-border:hover::before {
+  opacity: 1;
+  animation: borderFlow 4s linear infinite;
 }
 
 /* Custom button styles with field-like rounded corners */
@@ -145,4 +164,21 @@ body {
   @apply absolute bottom-full right-0 mb-1 hidden group-hover:inline
          bg-base-300 text-base-content text-xs rounded py-1 px-2
          whitespace-nowrap border border-neutral;
+}
+
+/* 添加新的卡片渐变样式 */
+.staking-card-gradient {
+  background: linear-gradient(135deg, 
+    hsl(var(--b3)) 0%,
+    hsl(var(--b2)) 40%,
+    hsl(var(--a)) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradientShift 10s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50% }
+  50% { background-position: 100% 50% }
+  100% { background-position: 0% 50% }
 }
