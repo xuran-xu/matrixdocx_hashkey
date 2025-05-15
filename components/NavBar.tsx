@@ -40,8 +40,8 @@ export default function NavBar() {
             <div onClick={() => handleNavigation('/')} className={`cursor-pointer ${isActive('/')}`}>
               Home
             </div>
-            <div onClick={() => handleNavigation('/stake')} className={`cursor-pointer ${isActive('/stake')}`}>
-              Stake
+            <div onClick={() => handleNavigation('/get_start')} className={`cursor-pointer ${isActive('/get_start')}`}>
+              Get start
             </div>
             <div onClick={() => handleNavigation('/my_assets')} className={`cursor-pointer ${isActive('/my_assets')}`}>
               My Assets

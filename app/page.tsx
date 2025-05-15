@@ -14,6 +14,28 @@ export default function Home() {
     { label: 'Reward Interval', value: '1 Block', border: 'accent' }
   ];
 
+  // Staking options data
+  const stakingOptions = [
+    {
+      title: 'HyperIndex Exchange',
+      apy: '5%',
+      description: 'Participate in HyperIndex XAUM/HSK LP pool to earn additional 4% APY rewards',
+      logo: '/hyperindex.jpg',
+    },
+    {
+      title: 'DODO Exchange',
+      apy: '5%',
+      description: 'Provide liquidity for DODO XAUM/HSK LP pool to earn multiple rewards',
+      logo: '/DODO.png',
+    },
+    {
+      title: 'Lending',
+      apy: '5%',
+      description: 'Lend your XAUM to earn stable interest rewards',
+      logo: '/Hashprime.png',
+    },
+  ];
+
   // FAQ data
   const [openQuestion, setOpenQuestion] = useState<number | null>(null);
   
@@ -63,8 +85,8 @@ export default function Home() {
               Hold gold effortlessly, earn rewards securely
             </p>
             <div className="flex justify-center">
-              <Link href="/stake" className="btn btn-primary hover:btn-accent transition-all duration-300 shadow-md hover:shadow-lg py-3 px-8 font-medium">
-                <span>Start Staking</span>
+              <Link href="/get_start" className="btn btn-primary hover:btn-accent transition-all duration-300 shadow-md hover:shadow-lg py-3 px-8 font-medium">
+                <span>BUY XAUM</span>
               </Link>
             </div>
             
@@ -91,6 +113,56 @@ export default function Home() {
                 <p className={`text-2xl font-bold ${
                   stat.highlight ? 'text-primary text-3xl' : 'text-base-content'
                 }`}>{stat.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Base APY Section */}
+      <section className="py-12 bg-base-300 bg-opacity-30">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-2xl mx-auto">
+            <h2 className="text-2xl font-medium text-gold mb-4">Base Annual Yield</h2>
+            <p className="text-base-content opacity-80">
+              Basic holding reward rate is <span className="font-bold text-primary">APY=1%</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Staking Options Section */}
+      <section className="py-16 bg-base-200">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-gold text-center mb-12">
+            Staking Options - Maximize Your Gold Yields
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {stakingOptions.map((option, index) => (
+              <div key={index} className="bg-base-300 border border-neutral p-6 rounded-box hover:border-primary transition-colors h-full flex flex-col">
+                <div className="flex flex-col items-center flex-grow">
+                  {option.logo && (
+                    <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                      <img 
+                        src={option.logo} 
+                        alt={option.title} 
+                        className={`${
+                          option.title === 'Lending' 
+                            ? 'h-15 w-auto'   // Hashprime logo 保持原始比例
+                            : 'w-8 h-8'     // 其他 logo 固定宽高
+                        } object-contain`}    // 保证图片不变形
+                      />
+                    </div>
+                  )}
+                  <h3 className="text-xl font-bold text-gold mb-2">{option.title}</h3>
+                  <div className="text-2xl text-primary font-bold mb-4">
+                    APY = {option.apy}
+                  </div>
+                  <p className="text-base-content text-center mb-6 flex-grow">{option.description}</p>
+                  <Link href="/get_start" className="btn btn-primary btn-outline w-full mt-auto">
+                    Get Start
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
