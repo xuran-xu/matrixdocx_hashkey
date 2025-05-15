@@ -61,8 +61,8 @@ export default function GetStart() {
         <div className="container mx-auto px-4 relative">
           {/* Step 1: Buy XAUM Section */}
           <div className="relative">
-            {/* Connection line between step numbers - 使用固定颜色，精确控制高度 */}
-            <div className="absolute left-5 top-[60px] w-[2px] h-[calc(100%+40px)] bg-gold opacity-50"></div>
+            {/* Connection line between step numbers - 更新连接线颜色为和 Home 页面一致的样式 */}
+            <div className="absolute left-5 top-[60px] w-[2px] h-[calc(100%+40px)] bg-primary/30 opacity-50"></div>
             
             <div className="mb-16"> {/* 减小底部间距 */}
               <div className="flex items-center gap-4 mb-8 relative z-10">
@@ -71,20 +71,20 @@ export default function GetStart() {
                   alt="Step 1"
                   width={40}
                   height={40}
-                  className="object-contain"
+                  className="object-contain invert brightness-100"
                 />
-                <h2 className="text-3xl font-bold text-gold">
+                <h2 className="text-3xl font-bold text-base-content">
                   Start Buying XAUM
                 </h2>
               </div>
 
               {/* Exchange Form Card */}
-              <div className="bg-base-300 rounded-box p-8 max-w-2xl mx-auto shadow-lg border border-primary/20">
+              <div className="bg-base-300/95 rounded-box p-8 max-w-2xl mx-auto shadow-lg border border-primary/20 hover:shadow-xl transition-all duration-300">
                 {!isWalletConnected ? (
                   <div className="text-center py-8">
                     <p className="text-lg mb-4">Please connect your wallet to continue</p>
                     <button 
-                      className="btn btn-primary hover:bg-primary/90 transition-all duration-300"
+                      className="btn bg-primary hover:bg-primary/80 text-black border-none transition-all duration-300 shadow-lg hover:shadow-xl"
                       onClick={() => setIsWalletConnected(true)}
                     >
                       Connect Wallet
@@ -108,7 +108,7 @@ export default function GetStart() {
                             value={inputAmount}
                             onChange={(e) => setInputAmount(e.target.value)}
                           />
-                          <button className="btn btn-outline">MAX</button>
+                          <button className="btn bg-primary hover:bg-primary/80 text-black border-none transition-all duration-300">MAX</button>
                         </div>
                       </div>
 
@@ -133,10 +133,10 @@ export default function GetStart() {
 
                       {/* Action Buttons */}
                       <div className="space-y-4 pt-4">
-                        <button className="btn btn-primary w-full hover:brightness-110 transition-all">
+                        <button className="btn bg-primary hover:bg-primary/80 text-black border-none w-full transition-all duration-300 shadow-lg hover:shadow-xl">
                           Approve HSK
                         </button>
-                        <button className="btn btn-accent w-full">
+                        <button className="btn bg-primary hover:bg-primary/80 text-black border-none w-full transition-all duration-300 shadow-lg hover:shadow-xl">
                           Buy XAUM
                         </button>
                       </div>
@@ -155,9 +155,9 @@ export default function GetStart() {
                 alt="Step 2"
                 width={40}
                 height={40}
-                className="object-contain"
+                className="object-contain invert brightness-100"
               />
-              <h2 className="text-3xl font-bold text-gold">
+              <h2 className="text-3xl font-bold text-base-content">
                 Choose Your Staking Option
               </h2>
             </div>
@@ -168,9 +168,9 @@ export default function GetStart() {
               <div className="space-y-4">
                 {/* Base Option */}
                 <div 
-                  className={`bg-base-300 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
+                  className={`bg-base-300/95 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
                     selectedOption === 'base' ? 'border-primary shadow-lg' : 'border-transparent'
-                  } cursor-pointer`}
+                  } cursor-pointer staking-card-gradient hover:scale-105 hover:shadow-xl transition-all duration-300`}
                   onClick={() => setSelectedOption('base')}
                 >
                   <div className="flex justify-between items-center">
@@ -191,18 +191,18 @@ export default function GetStart() {
 
                 {/* HyperIndex Option */}
                 <div 
-                  className={`bg-base-300 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
+                  className={`bg-base-300/95 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
                     selectedOption === 'hyperindex' ? 'border-primary shadow-lg' : 'border-transparent'
-                  } cursor-pointer`}
+                  } cursor-pointer staking-card-gradient hover:scale-105 hover:shadow-xl transition-all duration-300`}
                   onClick={() => setSelectedOption('hyperindex')}
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-xl font-bold">HyperIndex LP</h3>
+                      <h3 className="text-xl font-bold text-primary">HyperIndex LP</h3>
                       <p className="text-base-content/70">Provide liquidity to XAUM/HSK pool</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-accent">5% APY</div>
+                      <div className="text-2xl font-bold text-primary">5% APY</div>
                       <label className="swap">
                         <input type="radio" name="staking-option" value="hyperindex" />
                         <div className="swap-on">✓</div>
@@ -214,18 +214,18 @@ export default function GetStart() {
 
                 {/* DODO Option */}
                 <div 
-                  className={`bg-base-300 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
+                  className={`bg-base-300/95 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
                     selectedOption === 'dodo' ? 'border-primary shadow-lg' : 'border-transparent'
-                  } cursor-pointer`}
+                  } cursor-pointer staking-card-gradient hover:scale-105 hover:shadow-xl transition-all duration-300`}
                   onClick={() => setSelectedOption('dodo')}
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-xl font-bold">DODO LP</h3>
+                      <h3 className="text-xl font-bold text-primary">DODO LP</h3>
                       <p className="text-base-content/70">Provide liquidity to XAUM/YYY pool</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-accent">5% APY</div>
+                      <div className="text-2xl font-bold text-primary">5% APY</div>
                       <label className="swap">
                         <input type="radio" name="staking-option" value="dodo" />
                         <div className="swap-on">✓</div>
@@ -237,18 +237,18 @@ export default function GetStart() {
 
                 {/* Lending Option */}
                 <div 
-                  className={`bg-base-300 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
+                  className={`bg-base-300/95 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
                     selectedOption === 'lending' ? 'border-primary shadow-lg' : 'border-transparent'
-                  } cursor-pointer`}
+                  } cursor-pointer staking-card-gradient hover:scale-105 hover:shadow-xl transition-all duration-300`}
                   onClick={() => setSelectedOption('lending')}
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-xl font-bold">Lending Pool</h3>
+                      <h3 className="text-xl font-bold text-primary">Lending Pool</h3>
                       <p className="text-base-content/70">Earn interest by lending your XAUM</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-accent">5% APY</div>
+                      <div className="text-2xl font-bold text-primary">5% APY</div>
                       <label className="swap">
                         <input type="radio" name="staking-option" value="lending" />
                         <div className="swap-on">✓</div>
@@ -261,7 +261,7 @@ export default function GetStart() {
 
               {/* Right side - Staking Operation */}
               {selectedOption !== 'base' && (
-                <div className="bg-base-300 rounded-box p-8 shadow-lg border border-primary/20">
+                <div className="bg-base-300/95 rounded-box p-8 shadow-lg border border-primary/20 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
                   <div className="space-y-6">
                     {/* Staking Amount Input */}
                     <div className="form-control">
@@ -278,7 +278,7 @@ export default function GetStart() {
                           onChange={(e) => setStakingAmount(e.target.value)}
                         />
                         <button 
-                          className="btn join-item btn-primary"
+                          className="btn join-item bg-primary hover:bg-primary/80 text-black border-none transition-all duration-300"
                           onClick={handleMaxClick}
                         >
                           MAX
@@ -294,8 +294,8 @@ export default function GetStart() {
                     </div>
 
                     {/* Transaction Overview */}
-                    <div className="card bg-base-200 p-4">
-                      <h3 className="text-lg font-bold mb-4">Transaction Overview</h3>
+                    <div className="card bg-base-200/50 p-4 border border-primary/10">
+                      <h3 className="text-lg font-bold mb-4 text-primary">Transaction Overview</h3>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span>Selected Option</span>
@@ -309,7 +309,7 @@ export default function GetStart() {
                         </div>
                         <div className="flex justify-between">
                           <span>APY</span>
-                          <span className="font-bold text-accent">
+                          <span className="font-bold text-primary">
                             {stakingOptions[selectedOption].apy}%
                           </span>
                         </div>
@@ -337,7 +337,7 @@ export default function GetStart() {
 
                     {/* Action Button */}
                     <button 
-                      className="btn btn-primary w-full font-medium hover:brightness-110 transition-all"
+                      className="btn bg-primary hover:bg-primary/80 text-black border-none w-full mt-auto transition-all duration-300 shadow-lg hover:shadow-xl"
                       disabled={!stakingAmount || Number(stakingAmount) === 0}
                     >
                       Supply
