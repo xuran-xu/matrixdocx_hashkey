@@ -36,14 +36,14 @@ export default function NavBar() {
             </div>
           </div>
           
-          <div className="hidden md:flex space-x-6">
-            <div onClick={() => handleNavigation('/')} className={`cursor-pointer ${isActive('/')}`}>
+          <div className="hidden md:flex space-x-8"> {/* 增加了间距 space-x-8 */}
+            <div onClick={() => handleNavigation('/')} className={`cursor-pointer text-[16px] ${isActive('/')}`}>
               Home
             </div>
-            <div onClick={() => handleNavigation('/get_start')} className={`cursor-pointer ${isActive('/get_start')}`}>
+            <div onClick={() => handleNavigation('/get_start')} className={`cursor-pointer text-[16px] ${isActive('/get_start')}`}>
               Get start
             </div>
-            <div onClick={() => handleNavigation('/my_assets')} className={`cursor-pointer ${isActive('/my_assets')}`}>
+            <div onClick={() => handleNavigation('/my_assets')} className={`cursor-pointer text-[16px] ${isActive('/my_assets')}`}>
               My Assets
             </div>
           </div>

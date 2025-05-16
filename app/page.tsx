@@ -23,9 +23,9 @@ export default function Home() {
       logo: '/hyperindex.jpg',
     },
     {
-      title: 'Wating for more'
+      title: 'Wating for more',
+      className: 'h-full' // 修改为占满高度
     },
-
   ];
 
   // FAQ data
@@ -129,17 +129,17 @@ export default function Home() {
 
       {/* Staking Options Section */}
       <section className="py-16 bg-base-200">
-        <div className="container mx-auto px-4 max-w-5xl">
+        <div className="container mx-auto px-4 max-w-4xl">
           <h2 className="text-3xl font-bold text-base-content text-center mb-12">
             Staking Options - Maximize Your Gold Yields
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-center max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-center max-w-3xl mx-auto">
             {stakingOptions.map((option, index) => (
               <div 
                 key={index} 
-                className="relative staking-card-gradient p-8 rounded-xl h-full flex flex-col shadow-md hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out backdrop-blur-sm border border-accent/10"
+                className={`relative staking-card-gradient p-6 rounded-xl h-full flex flex-col shadow-md hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out backdrop-blur-sm border border-accent/10 text-center max-w-xs mx-auto w-full ${option.className || ''}`}
               >
-                <div className="relative flex flex-col items-center flex-grow backdrop-blur-[2px]">
+                <div className={`relative flex flex-col items-center backdrop-blur-[2px] ${!option.description ? 'justify-center flex-1' : ''}`}>
                   {option.logo && (
                     <div className="w-16 h-16 mb-4 flex items-center justify-center">
                       <img 

@@ -36,6 +36,34 @@
     text-shadow: 0 0 5px rgba(228, 190, 125, 0.5),
                  0 0 10px rgba(228, 190, 125, 0.3);
   }
+  
+  /* 紧凑型布局工具类 */
+  .compact-card {
+    @apply p-4 space-y-3;
+  }
+  
+  .compact-form {
+    @apply space-y-2;
+  }
+}
+
+/* 基础文字大小调整 */
+@layer base {
+  html {
+    font-size: 14px;
+  }
+  
+  h1 {
+    @apply text-2xl font-semibold;
+  }
+  
+  h2 {
+    @apply text-xl font-medium;
+  }
+  
+  h3 {
+    @apply text-lg font-medium;
+  }
 }
 
 /*
@@ -75,6 +103,7 @@ body {
   border: 1px solid theme('colors.primary');
   background-clip: padding-box;
   transition: all 0.3s ease;
+  @apply p-4;
 }
 
 .card-border::before {
@@ -113,7 +142,7 @@ body {
 
 /* Custom button styles with field-like rounded corners */
 .btn-staking {
-  @apply rounded-[0.5rem] transition-all duration-300;
+  @apply rounded-[0.5rem] transition-all duration-300 text-sm py-2 px-4;
   background: theme('colors.accent');
   color: #000;
   position: relative;
@@ -148,13 +177,13 @@ body {
 
 /* Token Address Box Styles */
 .token-address-box {
-  @apply bg-base-300 bg-opacity-50 backdrop-blur-sm rounded-xl border border-neutral p-4
+  @apply bg-base-300 bg-opacity-50 backdrop-blur-sm rounded-xl border border-neutral p-3
          transition-all hover:border-primary hover:border-opacity-30 hover:bg-base-300 hover:bg-opacity-80 text-left
-         mt-8 max-w-lg mx-auto;
+         mt-6 max-w-lg mx-auto text-sm;
 }
 
 .token-address-icon {
-  @apply w-8 h-8 rounded-full bg-primary bg-opacity-20 flex items-center justify-center mr-3;
+  @apply w-6 h-6 rounded-full bg-primary bg-opacity-20 flex items-center justify-center mr-3;
 }
 
 .token-address-copy-button {
@@ -176,6 +205,7 @@ body {
   );
   background-size: 200% 200%;
   animation: gradientShift 10s ease infinite;
+  @apply p-4 space-y-3;
 }
 
 @keyframes gradientShift {
