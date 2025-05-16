@@ -2,7 +2,7 @@ import Image from 'next/image'
 
 export default function WalletBalance() {
   return (
-    <div className="w-full bg-base-200/50 p-3 rounded-xl shadow-sm mb-6">
+    <div className="w-full bg-base-300/95 p-8 rounded-box shadow-sm">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-base font-semibold text-base-content/80">Wallet Balance</h2>
         <button className="btn btn-xs btn-ghost">Refresh</button>

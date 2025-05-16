@@ -23,17 +23,9 @@ export default function Home() {
       logo: '/hyperindex.jpg',
     },
     {
-      title: 'DODO Exchange',
-      apy: '5%',
-      description: 'Provide liquidity for DODO XAUM/HSK LP pool to earn multiple rewards',
-      logo: '/DODO.png',
+      title: 'Wating for more'
     },
-    {
-      title: 'Lending',
-      apy: '5%',
-      description: 'Lend your XAUM to earn stable interest rewards',
-      logo: '/Hashprime.png',
-    },
+
   ];
 
   // FAQ data
@@ -137,38 +129,38 @@ export default function Home() {
 
       {/* Staking Options Section */}
       <section className="py-16 bg-base-200">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 max-w-5xl">
           <h2 className="text-3xl font-bold text-base-content text-center mb-12">
             Staking Options - Maximize Your Gold Yields
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-center max-w-4xl mx-auto">
             {stakingOptions.map((option, index) => (
               <div 
                 key={index} 
-                className="relative staking-card-gradient p-6 rounded-xl h-full flex flex-col shadow-md hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out backdrop-blur-sm border border-accent/10"
+                className="relative staking-card-gradient p-8 rounded-xl h-full flex flex-col shadow-md hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out backdrop-blur-sm border border-accent/10"
               >
                 <div className="relative flex flex-col items-center flex-grow backdrop-blur-[2px]">
                   {option.logo && (
-                    <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                    <div className="w-16 h-16 mb-4 flex items-center justify-center">
                       <img 
                         src={option.logo} 
                         alt={option.title} 
-                        className={`${
-                          option.title === 'Lending' 
-                            ? 'h-15 w-auto'
-                            : 'w-8 h-8'
-                        } object-contain`}
+                        className="w-12 h-12 object-contain"
                       />
                     </div>
                   )}
-                  <h3 className="text-xl font-bold text-primary mb-2">{option.title}</h3>
-                  <div className="text-2xl text-primary/80 font-bold mb-4">
-                    APY = {option.apy}
-                  </div>
+                  <h3 className="text-2xl font-bold text-primary mb-3">{option.title}</h3>
+                  {option.apy && (
+                    <div className="text-2xl text-primary/80 font-bold mb-4">
+                      APY = {option.apy}
+                    </div>
+                  )}
                   <p className="text-base-content text-center mb-6 flex-grow">{option.description}</p>
-                  <Link href="/get_start" className="btn bg-primary hover:bg-primary/80 text-black border-none w-full mt-auto transition-all duration-300">
-                    Get Start
-                  </Link>
+                  {option.description && (
+                    <Link href="/get_start" className="btn bg-primary hover:bg-primary/80 text-black border-none w-full mt-auto transition-all duration-300">
+                      Get Start
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}

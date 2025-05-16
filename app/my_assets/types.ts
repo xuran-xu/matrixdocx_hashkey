@@ -18,6 +18,14 @@ export interface TotalEarnings {
   rewardRate: string;     // 新增
   nextClaimTime: Date;    // 新增
   totalReward: number;
-  activeProjects: number;
   projectNames: string[]; // 新增
+}
+
+export interface StakeRecord {
+  id: string;
+  projectName: string;
+  amount: number;
+  timestamp: Date;
+  type: 'claim' | 'stake' | 'unstake';
+  status: 'completed' | 'pending';
 }

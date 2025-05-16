@@ -9,6 +9,7 @@
   --foreground: theme('colors.base-content');
   --gold-color: #E4BE7D; /* Main gold color */
   --gold-color-hover: #D7B06E; /* Gold for hover states, adjust as needed */
+  --font-family: 'Sora', Arial, sans-serif;
 }
 
 /* 强制覆盖和重置一些可能被修改的样式 */
@@ -54,7 +55,7 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif; /* Optionally use your sora font */
+  font-family: var(--font-family);
 }
 
 @keyframes borderFlow {

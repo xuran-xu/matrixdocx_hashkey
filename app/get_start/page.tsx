@@ -19,13 +19,10 @@ export default function GetStart() {
   // Calculate estimated XAUM amount
   const estimatedXAUM = inputAmount ? (parseFloat(inputAmount) * exchangeRate).toFixed(2) : '0';
 
-  type StakingOptionKey = 'base' | 'hyperindex' | 'dodo' | 'lending';
+  // 修改类型定义
+  type StakingOptionKey = 'base' | 'hyperindex';
   
-  // 添加 Staking 相关状态
-  const [selectedOption, setSelectedOption] = useState<StakingOptionKey>('base');
-  const [stakingAmount, setStakingAmount] = useState<string>('');
-  
-  // Staking 选项配置
+  // 修改 Staking 选项配置
   const stakingOptions = {
     base: {
       name: 'Base Holding',
@@ -36,19 +33,13 @@ export default function GetStart() {
       name: 'HyperIndex LP',
       apy: '5',
       description: 'Provide liquidity to XAUM/HSK pool'
-    },
-    dodo: {
-      name: 'DODO LP',
-      apy: '5',
-      description: 'Provide liquidity to XAUM/YYY pool'
-    },
-    lending: {
-      name: 'Lending Pool',
-      apy: '5',
-      description: 'Earn interest by lending your XAUM'
     }
   };
 
+  // 添加 Staking 相关状态
+  const [selectedOption, setSelectedOption] = useState<StakingOptionKey>('hyperindex');
+  const [stakingAmount, setStakingAmount] = useState<string>('');
+  
   // 处理 MAX 按钮点击
   const handleMaxClick = () => {
     setStakingAmount(mockBalances.xaum);
@@ -71,7 +62,7 @@ export default function GetStart() {
                   alt="Step 1"
                   width={40}
                   height={40}
-                  className="object-contain invert brightness-100"
+                  className="object-contain"
                 />
                 <h2 className="text-3xl font-bold text-base-content">
                   Start Buying XAUM
@@ -155,7 +146,7 @@ export default function GetStart() {
                 alt="Step 2"
                 width={40}
                 height={40}
-                className="object-contain invert brightness-100"
+                className="object-contain"
               />
               <h2 className="text-3xl font-bold text-base-content">
                 Choose Your Staking Option
@@ -166,29 +157,6 @@ export default function GetStart() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left side - Staking Options */}
               <div className="space-y-4">
-                {/* Base Option */}
-                <div 
-                  className={`bg-base-300/95 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
-                    selectedOption === 'base' ? 'border-primary shadow-lg' : 'border-transparent'
-                  } cursor-pointer staking-card-gradient hover:scale-105 hover:shadow-xl transition-all duration-300`}
-                  onClick={() => setSelectedOption('base')}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-xl font-bold text-primary">Base Holding</h3>
-                      <p className="text-base-content/70">Basic XAUM holding rewards</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-primary">1% APY</div>
-                      <label className="swap">
-                        <input type="radio" name="staking-option" value="base" />
-                        <div className="swap-on">✓</div>
-                        <div className="swap-off"></div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
                 {/* HyperIndex Option */}
                 <div 
                   className={`bg-base-300/95 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
@@ -212,45 +180,22 @@ export default function GetStart() {
                   </div>
                 </div>
 
-                {/* DODO Option */}
+                {/* Base Option */}
                 <div 
                   className={`bg-base-300/95 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
-                    selectedOption === 'dodo' ? 'border-primary shadow-lg' : 'border-transparent'
+                    selectedOption === 'base' ? 'border-primary shadow-lg' : 'border-transparent'
                   } cursor-pointer staking-card-gradient hover:scale-105 hover:shadow-xl transition-all duration-300`}
-                  onClick={() => setSelectedOption('dodo')}
+                  onClick={() => setSelectedOption('base')}
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-xl font-bold text-primary">DODO LP</h3>
-                      <p className="text-base-content/70">Provide liquidity to XAUM/YYY pool</p>
+                      <h3 className="text-xl font-bold text-primary">Base Holding</h3>
+                      <p className="text-base-content/70">Basic XAUM holding rewards</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-primary">5% APY</div>
+                      <div className="text-2xl font-bold text-primary">1% APY</div>
                       <label className="swap">
-                        <input type="radio" name="staking-option" value="dodo" />
-                        <div className="swap-on">✓</div>
-                        <div className="swap-off"></div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Lending Option */}
-                <div 
-                  className={`bg-base-300/95 rounded-lg p-6 border-2 hover:bg-base-200 transition-colors ${
-                    selectedOption === 'lending' ? 'border-primary shadow-lg' : 'border-transparent'
-                  } cursor-pointer staking-card-gradient hover:scale-105 hover:shadow-xl transition-all duration-300`}
-                  onClick={() => setSelectedOption('lending')}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-xl font-bold text-primary">Lending Pool</h3>
-                      <p className="text-base-content/70">Earn interest by lending your XAUM</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-primary">5% APY</div>
-                      <label className="swap">
-                        <input type="radio" name="staking-option" value="lending" />
+                        <input type="radio" name="staking-option" value="base" />
                         <div className="swap-on">✓</div>
                         <div className="swap-off"></div>
                       </label>
@@ -318,18 +263,6 @@ export default function GetStart() {
                           <div className="flex justify-between">
                             <span>Platform</span>
                             <span className="font-bold">HyperIndex DEX</span>
-                          </div>
-                        )}
-                        {selectedOption === 'dodo' && (
-                          <div className="flex justify-between">
-                            <span>Platform</span>
-                            <span className="font-bold">DODO DEX</span>
-                          </div>
-                        )}
-                        {selectedOption === 'lending' && (
-                          <div className="flex justify-between">
-                            <span>Lock Period</span>
-                            <span className="font-bold">Flexible</span>
                           </div>
                         )}
                       </div>
