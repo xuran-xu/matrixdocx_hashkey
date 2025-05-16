@@ -52,104 +52,44 @@ export default function GetStart() {
         <div className="container mx-auto px-4 relative">
           {/* Step 1: Buy XAUM Section */}
           <div className="relative">
-            {/* Connection line between step numbers - 更新连接线颜色为和 Home 页面一致的样式 */}
-            <div className="absolute left-5 top-[60px] w-[2px] h-[calc(100%+40px)] bg-primary/30 opacity-50"></div>
-            
             <div className="mb-16"> {/* 减小底部间距 */}
               <div className="flex items-center gap-4 mb-8 relative z-10">
-                <Image
-                  src="/number-1.png"
-                  alt="Step 1"
-                  width={40}
-                  height={40}
-                  className="object-contain"
-                />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-10 text-primary">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                </svg>
                 <h2 className="text-3xl font-bold text-base-content">
-                  Start Buying XAUM
+                  <span className="text-primary">Step 1. </span>Start Buying XAUM
                 </h2>
               </div>
 
               {/* Exchange Form Card */}
               <div className="bg-base-300/95 rounded-box p-8 max-w-2xl mx-auto shadow-lg border border-primary/20 hover:shadow-xl transition-all duration-300">
-                {!isWalletConnected ? (
-                  <div className="text-center py-8">
-                    <p className="text-lg mb-4">Please connect your wallet to continue</p>
-                    <button 
-                      className="btn bg-primary hover:bg-primary/80 text-black border-none transition-all duration-300 shadow-lg hover:shadow-xl"
-                      onClick={() => setIsWalletConnected(true)}
-                    >
-                      Connect Wallet
-                    </button>
+                <div className="text-center py-8">
+                  <div className="flex justify-center mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-12 text-primary">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+                    </svg>
                   </div>
-                ) : (
-                  <>
-                    {/* Exchange Form */}
-                    <div className="space-y-6">
-                      {/* Input HSK */}
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text text-base-content">Input HSK Amount</span>
-                          <span className="label-text-alt">Balance: {mockBalances.hsk} HSK</span>
-                        </label>
-                        <div className="input-group">
-                          <input
-                            type="number"
-                            placeholder="0.00"
-                            className="input input-bordered w-full bg-base-200 focus:border-primary"
-                            value={inputAmount}
-                            onChange={(e) => setInputAmount(e.target.value)}
-                          />
-                          <button className="btn bg-primary hover:bg-primary/80 text-black border-none transition-all duration-300">MAX</button>
-                        </div>
-                      </div>
-
-                      {/* Exchange Rate */}
-                      <div className="flex justify-center items-center text-base-content">
-                        <i className="fas fa-arrow-down text-2xl"></i>
-                      </div>
-
-                      {/* Output XAUM */}
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text text-base-content">Estimated XAUM</span>
-                          <span className="label-text-alt">Balance: {mockBalances.xaum} XAUM</span>
-                        </label>
-                        <input
-                          type="text"
-                          className="input input-bordered"
-                          value={estimatedXAUM}
-                          disabled
-                        />
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="space-y-4 pt-4">
-                        <button className="btn bg-primary hover:bg-primary/80 text-black border-none w-full transition-all duration-300 shadow-lg hover:shadow-xl">
-                          Approve HSK
-                        </button>
-                        <button className="btn bg-primary hover:bg-primary/80 text-black border-none w-full transition-all duration-300 shadow-lg hover:shadow-xl">
-                          Buy XAUM
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
+                  <p className="text-lg mb-4">Click the button below to start purchasing XAUM</p>
+                  <a 
+                    href="#" 
+                    className="btn bg-primary hover:bg-primary/80 text-black border-none transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    Go to Exchange
+                  </a>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Step 2: Staking Options Section */}
           <div className="relative pt-10">
-            <div className="flex items-center gap-4 mb-8 relative z-10">
-              <Image
-                src="/circle-2.png"
-                alt="Step 2"
-                width={40}
-                height={40}
-                className="object-contain"
-              />
+            <div className="flex items-center gap-4 mb-12 relative z-10">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-10 text-primary">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
               <h2 className="text-3xl font-bold text-base-content">
-                Choose Your Staking Option
+                <span className="text-primary">Step 2. </span>Choose Your Staking Option
               </h2>
             </div>
 
@@ -205,7 +145,16 @@ export default function GetStart() {
               </div>
 
               {/* Right side - Staking Operation */}
-              {selectedOption !== 'base' && (
+              {selectedOption === 'base' ? (
+                <div className="bg-base-300/95 rounded-box p-8 shadow-lg border border-primary/20 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                  <div className="text-center space-y-4">
+                    <h3 className="text-2xl font-bold text-primary">Basic APY Rewards</h3>
+                    <p className="text-base-content/80">
+                      This is the basic APY. For higher reward, please participate in HyperIndex LP activities.
+                    </p>
+                  </div>
+                </div>
+              ) : (
                 <div className="bg-base-300/95 rounded-box p-8 shadow-lg border border-primary/20 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
                   <div className="space-y-6">
                     {/* Staking Amount Input */}

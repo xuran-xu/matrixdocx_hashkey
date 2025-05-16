@@ -5,12 +5,18 @@ import MainLayout from './main-layout';
 import FlowingParticles from '../components/FlowingParticles';
 import AddressBar from '../components/AddressBar';
 import Link from 'next/link';
+import { ShieldCheckIcon, ChartBarIcon, CurrencyDollarIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
 export default function Home() {
   // Mock statistics data
   const stats = [
+    { 
+      label: 'Max APY', 
+      value: '5%', 
+      subValue: ['Base APY = 1%', 'Additional Reward = 4%'],
+      highlight: true 
+    },
     { label: 'Total Staked', value: '1,234,567 HSK', border: 'accent' },
-    { label: 'Max APY', value: 'Up to 5%', highlight: true },
     { label: 'Reward Interval', value: '1 Block', border: 'accent' }
   ];
 
@@ -20,11 +26,10 @@ export default function Home() {
       title: 'HyperIndex Exchange',
       apy: '5%',
       description: 'Participate in HyperIndex XAUM/HSK LP pool to earn additional 4% APY rewards',
-      logo: '/hyperindex.jpg',
+      logo: '/hyper.png',
     },
     {
-      title: 'Wating for more',
-      className: 'h-full' // 修改为占满高度
+      title: 'More Options Coming Soon',
     },
   ];
 
@@ -89,40 +94,40 @@ export default function Home() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-base-200 bg-opacity-50">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {stats.map((stat, index) => (
-              <div
-                key={index}
-                className={`p-6 rounded-box flex flex-col items-center text-center border ${
-                  stat.highlight 
-                    ? 'border-primary border-2' 
-                    : 'border-primary/30'
-                } bg-gradient-to-br from-base-300/95 to-base-200/95 backdrop-blur-sm hover:shadow-lg transition-all duration-300`}
-              >
-                <h3 className="text-base-content mb-2">{stat.label}</h3>
-                <p className={`text-2xl font-bold ${
-                  stat.highlight ? 'text-primary text-3xl' : 'text-primary/80'
-                }`}>{stat.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Base APY Section */}
-      <section className="py-12 relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 opacity-20"></div>
+      <section className="py-16 relative">
         <div className="container mx-auto px-4 relative">
-          <div className="text-center max-w-2xl mx-auto border border-primary/20 rounded-xl p-8 backdrop-blur-sm bg-base-300/50">
-            <h2 className="text-2xl font-medium text-primary mb-4 relative">
-              <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-20 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"></span>
-              Base Annual Yield
-            </h2>
-            <p className="text-base-content">
-              Basic holding reward rate is <span className="font-bold text-primary text-xl">APY=1%</span>
-            </p>
+          <div className="grid grid-cols-[400px,2px,1fr] gap-12">
+            {/* Max APY Card */}
+            <div className="p-4 rounded-lg flex flex-col items-center justify-center">
+              <h3 className="text-base-content mb-2">{stats[0].label}</h3>
+              <div className="flex flex-col items-center">
+                <p className="text-4xl font-bold text-primary mb-6">{stats[0].value}</p>
+                <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent mb-6"></div>
+                <div className="flex flex-col gap-3 items-center">
+                  {stats[0].subValue?.map((text, i) => (
+                    <span key={i} className="text-base text-base-content/90">{text}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-full border-r border-dashed border-primary/30"></div>
+
+            {/* Other Stats */}
+            <div className="flex flex-col justify-center gap-6 pl-12">
+              {stats.slice(1).map((stat, index) => (
+                <div
+                  key={index}
+                  className="p-3 flex items-center gap-4"
+                >
+                  <h3 className="text-base-content">{stat.label}:</h3>
+                  <p className="text-2xl font-bold text-primary/80">{
+                    stat.label === 'Total Staked' ? '1,234,567 XAUM' : stat.value
+                  }</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -137,31 +142,33 @@ export default function Home() {
             {stakingOptions.map((option, index) => (
               <div 
                 key={index} 
-                className={`relative staking-card-gradient p-6 rounded-xl h-full flex flex-col shadow-md hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out backdrop-blur-sm border border-accent/10 text-center max-w-xs mx-auto w-full ${option.className || ''}`}
+                className="relative bg-gradient-to-b from-base-300 to-amber-400/30 p-6 rounded-xl h-full shadow-md hover:scale-105 hover:shadow-xl transition-all duration-300 backdrop-blur-sm max-w-xs mx-auto w-full"
               >
-                <div className={`relative flex flex-col items-center backdrop-blur-[2px] ${!option.description ? 'justify-center flex-1' : ''}`}>
-                  {option.logo && (
-                    <div className="w-16 h-16 mb-4 flex items-center justify-center">
-                      <img 
-                        src={option.logo} 
-                        alt={option.title} 
-                        className="w-12 h-12 object-contain"
-                      />
-                    </div>
-                  )}
-                  <h3 className="text-2xl font-bold text-primary mb-3">{option.title}</h3>
-                  {option.apy && (
-                    <div className="text-2xl text-primary/80 font-bold mb-4">
-                      APY = {option.apy}
-                    </div>
-                  )}
-                  <p className="text-base-content text-center mb-6 flex-grow">{option.description}</p>
-                  {option.description && (
-                    <Link href="/get_start" className="btn bg-primary hover:bg-primary/80 text-black border-none w-full mt-auto transition-all duration-300">
+                {option.description ? (
+                  // 有描述的卡片保持原有布局
+                  <div className="flex flex-col items-center">
+                    {option.logo && (
+                      <div className="w-16 h-16 mb-4 flex items-center justify-center">
+                        <img src={option.logo} alt={option.title} className="w-12 h-12 object-contain" />
+                      </div>
+                    )}
+                    <h3 className="text-2xl font-bold text-primary/80 mb-3">{option.title}</h3>
+                    {option.apy && (
+                      <div className="text-2xl text-primary font-bold mb-4">
+                        APY = {option.apy}
+                      </div>
+                    )}
+                    <p className="text-base-content text-center mb-6">{option.description}</p>
+                    <Link href="/get_start" className="btn bg-primary hover:bg-primary/80 text-black border-none w-[150px] transition-all duration-300">
                       Get Start
                     </Link>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  // 无描述的卡片使用完全居中布局
+                  <div className="flex items-center justify-center h-full w-full">
+                    <h3 className="text-2xl font-bold text-primary text-center">{option.title}</h3>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -173,23 +180,23 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-base-content text-center mb-12">Why Choose HashKey Staking</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-x-2 divide-dashed divide-primary/30">
-            <div className="bg-base-300/30 p-8 rounded-none">
-              <div className="text-gold text-4xl mb-4">
-                <i className="fas fa-lock"></i>
+            <div className="bg-base-300/30 p-8 rounded-none text-center">
+              <div className="text-gold flex justify-center mb-4">
+                <ShieldCheckIcon className="w-10 h-10" />
               </div>
               <h3 className="text-xl font-bold text-gold mb-3">Secure & Reliable</h3>
               <p className="text-base-content">Your asset security is our top priority. All staking contracts are audited by third parties.</p>
             </div>
-            <div className="bg-base-300/30 p-8 rounded-none">
-              <div className="text-gold text-4xl mb-4">
-                <i className="fas fa-chart-line"></i>
+            <div className="bg-base-300/30 p-8 rounded-none text-center">
+              <div className="text-gold flex justify-center mb-4">
+                <ChartBarIcon className="w-10 h-10" />
               </div>
               <h3 className="text-xl font-bold text-gold mb-3">High Returns</h3>
               <p className="text-base-content">Competitive staking rewards with APYs up to 5%.</p>
             </div>
-            <div className="bg-base-300/30 p-8 rounded-none">
-              <div className="text-gold text-4xl mb-4">
-                <i className="fas fa-hand-holding-usd"></i>
+            <div className="bg-base-300/30 p-8 rounded-none text-center">
+              <div className="text-gold flex justify-center mb-4">
+                <CurrencyDollarIcon className="w-10 h-10" />
               </div>
               <h3 className="text-xl font-bold text-gold mb-3">Flexible Options</h3>
               <p className="text-base-content">Multiple staking periods to meet different user needs.</p>
@@ -202,26 +209,30 @@ export default function Home() {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-base-content text-center mb-12">Frequently Asked Questions</h2>
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl mx-auto space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="mb-4">
-                <div 
-                  className="p-4 bg-base-300 bg-opacity-50 border border-neutral rounded-lg cursor-pointer flex justify-between items-center"
+              <div key={index} className="border border-base-300 rounded-lg overflow-hidden">
+                <button
+                  className="w-full p-4 flex justify-between items-center bg-base-200 hover:bg-base-300 transition-colors duration-200"
                   onClick={() => toggleQuestion(index)}
                 >
-                  <h3 className="text-xl font-medium text-gold">{faq.question}</h3>
-                  <span className="text-gold">
+                  <h3 className="text-lg font-medium text-primary text-left">{faq.question}</h3>
+                  <span className="text-base-content/80 ml-4">
                     {openQuestion === index ? 
-                      <i className="fas fa-chevron-up"></i> : 
-                      <i className="fas fa-chevron-down"></i>
+                      <ChevronUpIcon className="w-5 h-5" /> : 
+                      <ChevronDownIcon className="w-5 h-5" />
                     }
                   </span>
-                </div>
-                {openQuestion === index && (
-                  <div className="p-4 bg-base-200 bg-opacity-30 border-l border-r border-b border-neutral rounded-b-lg mt-[-4px]">
-                    <p className="text-base-content">{faq.answer}</p>
+                </button>
+                <div 
+                  className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${
+                    openQuestion === index ? 'max-h-96' : 'max-h-0'
+                  }`}
+                >
+                  <div className="p-4 bg-base-100/50">
+                    <p className="text-base-content/90">{faq.answer}</p>
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </div>
