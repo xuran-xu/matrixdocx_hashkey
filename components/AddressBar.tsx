@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 // XAUM代币合约地址
-const XAUMAddress = '0xD2fdDFf28A534300ae961c5435E16f9465253b76'; // 示例地址，需要替换为实际地址
+const XAUMAddress = '0x2577217c86ae2E8a5f70Abb663B9231E5d47D15a'; 
+// https://hashkey.blockscout.com/token/0x2577217c86ae2E8a5f70Abb663B9231E5d47D15a?tab=contract_bytecode
 
 export default function AddressBar() {
   const [copied, setCopied] = useState(false);
