@@ -40,6 +40,14 @@ export default function GetStart() {
   const [selectedOption, setSelectedOption] = useState<StakingOptionKey>('hyperindex');
   const [stakingAmount, setStakingAmount] = useState<string>('');
   
+  // Update trading pairs data with image paths
+  const tradingPairs = [
+    { from: 'USDT', to: 'XAUM', iconPath: '/USDT.png' },
+    { from: 'USDC', to: 'XAUM', iconPath: '/USDC.png' },
+    { from: 'WETH', to: 'XAUM', iconPath: '/weth.png' },
+    { from: 'HSK', to: 'XAUM', iconPath: '/HSK.png' },
+  ];
+
   // 处理 MAX 按钮点击
   const handleMaxClick = () => {
     setStakingAmount(mockBalances.xaum);
@@ -190,30 +198,52 @@ export default function GetStart() {
                     {/* Transaction Overview */}
                     <div className="card bg-base-200/50 p-4 border border-primary/10">
                       <h3 className="text-lg font-bold mb-4 text-primary">Transaction Overview</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span>Selected Option</span>
-                          <span className="font-bold">{stakingOptions[selectedOption].name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Amount</span>
-                          <span className="font-bold">
-                            {stakingAmount || '0'} XAUM
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>APY</span>
-                          <span className="font-bold text-primary">
-                            {stakingOptions[selectedOption].apy}%
-                          </span>
-                        </div>
-                        {/* 根据不同选项显示特定信息 */}
-                        {selectedOption === 'hyperindex' && (
-                          <div className="flex justify-between">
-                            <span>Platform</span>
-                            <span className="font-bold">HyperIndex DEX</span>
+                      <div className="space-y-4">
+                        {/* Trading Pairs Section */}
+                        <div className="bg-base-300/50 p-3 rounded-lg">
+                          <div className="text-sm mb-2 text-base-content/70">Available LP Pairs</div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {tradingPairs.map((pair, index) => (
+                              <div key={index} className="flex items-center gap-2 p-2 bg-base-200/50 rounded">
+                                <Image 
+                                  src={pair.iconPath}
+                                  alt={`${pair.from} icon`}
+                                  width={24}
+                                  height={24}
+                                  className="rounded-full"
+                                />
+                                <span className="text-sm font-medium">{pair.from}/XAUM</span>
+                              </div>
+                            ))}
                           </div>
-                        )}
+                        </div>
+                        
+                        {/* Original Transaction Details */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Selected Option</span>
+                            <span className="font-bold">{stakingOptions[selectedOption].name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Amount</span>
+                            <span className="font-bold">
+                              {stakingAmount || '0'} XAUM
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>APY</span>
+                            <span className="font-bold text-primary">
+                              {stakingOptions[selectedOption].apy}%
+                            </span>
+                          </div>
+                          {/* 根据不同选项显示特定信息 */}
+                          {selectedOption === 'hyperindex' && (
+                            <div className="flex justify-between">
+                              <span>Platform</span>
+                              <span className="font-bold">HyperIndex DEX</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
