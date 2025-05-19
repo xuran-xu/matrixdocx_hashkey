@@ -8,10 +8,10 @@ import {
   date,
   pgEnum,
   jsonb,
-  primaryKey, // Import primaryKey
-  bigint // Import bigint for blockNumber
+  bigint, // Import bigint for blockNumber
+  integer, // Import integer for new fields
+  boolean // Import boolean for new fields
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 
 // Optional: Define an enum for LP Record Types
 export const lpRecordTypeEnum = pgEnum('lp_record_type', [
@@ -52,16 +52,17 @@ export const users = pgTable('users', {
 });
 
 // 1. user 持有 xaum 余额表 (User XAUM Balance Table)
-export const userXaumBalances = pgTable('user_xaum_balances', {
-  id: text('id').primaryKey(), // Internal ID for this specific balance record
+export const userXaumBalanceSnapshots = pgTable('user_xaum_balance_snapshots', {
+  id: text('id').primaryKey(),
   userWalletAddress: text('user_wallet_address').notNull().references(() => users.walletAddress, { onDelete: 'cascade' }),
-  balance: decimal('balance', { precision: 18, scale: 8 }).notNull().default('0'),
-  lastUpdatedAt: timestamp('last_updated_at', { withTimezone: true }).defaultNow().notNull().$onUpdate(() => new Date()),
-}, (table) => {
-  return {
-    userWalletAddressIdx: uniqueIndex('user_xaum_balance_wallet_address_idx').on(table.userWalletAddress),
-  };
-});
+  balance: decimal('balance', { precision: 18, scale: 8 }).notNull(),
+  snapshotDate: date('snapshot_date').notNull(),
+  continuousHoldingDays: integer('continuous_holding_days'), // 连续持仓天数
+  assetPriceUsd: decimal('asset_price_usd', { precision: 18, scale: 8 }), // 可选：XAUM当日价格
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userWalletAddressSnapshotDateIdx: uniqueIndex('user_xaum_balance_snapshots_wallet_address_snapshot_date_idx').on(table.userWalletAddress, table.snapshotDate),
+}));
 
 // 2. user 持有 xaum 收益表 (User XAUM Yield Table)
 export const userXaumYields = pgTable('user_xaum_yields', {
@@ -71,6 +72,8 @@ export const userXaumYields = pgTable('user_xaum_yields', {
   balanceAtSnapshot: decimal('balance_at_snapshot', { precision: 18, scale: 8 }).notNull(),
   yieldEarned: decimal('yield_earned', { precision: 18, scale: 8 }).notNull(),
   apyRate: decimal('apy_rate', { precision: 10, scale: 5 }), // Nullable
+  isClaimed: boolean('is_claimed').default(false),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => {
   return {
@@ -81,18 +84,18 @@ export const userXaumYields = pgTable('user_xaum_yields', {
 });
 
 // 3. user 持有 HyperIndex LP 余额表 (User HyperIndex LP Balance Table)
-export const userHyperIndexLpBalances = pgTable('user_hyperindex_lp_balances', {
-  id: text('id').primaryKey(), // Internal ID for this specific LP balance record
+export const userHyperIndexLpBalanceSnapshots = pgTable('user_hyperindex_lp_balance_snapshots', {
+  id: text('id').primaryKey(),
   userWalletAddress: text('user_wallet_address').notNull().references(() => users.walletAddress, { onDelete: 'cascade' }),
-  lpTokenSymbol: text('lp_token_symbol').notNull(), // e.g., "ETH-USDC-LP"
-  balance: decimal('balance', { precision: 18, scale: 8 }).notNull().default('0'),
-  lastUpdatedAt: timestamp('last_updated_at', { withTimezone: true }).defaultNow().notNull().$onUpdate(() => new Date()),
-}, (table) => {
-  return {
-    userWalletAddressLpSymbolIdx: uniqueIndex('user_hyperindex_lp_balance_wallet_address_lp_symbol_idx').on(table.userWalletAddress, table.lpTokenSymbol),
-    userWalletAddressIdx: index('user_hyperindex_lp_balance_wallet_address_idx').on(table.userWalletAddress),
-  };
-});
+  lpTokenSymbol: text('lp_token_symbol').notNull(),
+  balance: decimal('balance', { precision: 18, scale: 8 }).notNull(),
+  snapshotDate: date('snapshot_date').notNull(),
+  continuousLpHoldingDays: integer('continuous_lp_holding_days'), // 连续LP持仓天数
+  assetPriceUsd: decimal('asset_price_usd', { precision: 18, scale: 8 }), // 可选：LP Token当日价格
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userWalletAddressLpSymbolSnapshotDateIdx: uniqueIndex('user_hyperindex_lp_balance_snapshots_wallet_address_lp_symbol_snapshot_date_idx').on(table.userWalletAddress, table.lpTokenSymbol, table.snapshotDate),
+}));
 
 // 4. user 持有 HyperIndex LP 收益表 (User HyperIndex LP Yield Table)
 export const userHyperIndexLpYields = pgTable('user_hyperindex_lp_yields', {
@@ -103,6 +106,8 @@ export const userHyperIndexLpYields = pgTable('user_hyperindex_lp_yields', {
   balanceAtSnapshot: decimal('balance_at_snapshot', { precision: 18, scale: 8 }).notNull(),
   yieldEarned: decimal('yield_earned', { precision: 18, scale: 8 }).notNull(),
   apyRate: decimal('apy_rate', { precision: 10, scale: 5 }), // Nullable
+  isClaimed: boolean('is_claimed').default(false),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => {
   return {
