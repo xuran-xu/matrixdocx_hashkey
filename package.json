@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:migrate": "node -r esbuild-register ./scripts/migrate.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",
@@ -18,9 +21,11 @@
     "axios": "^1.8.1",
     "connectkit": "^1.9.0",
     "daisyui": "latest",
+    "drizzle-orm": "^0.43.1",
     "ethers": "^6.9.0",
     "graphql": "^16.10.0",
     "next": "^15.1.7",
+    "pg": "^8.16.0",
     "pino-pretty": "^13.0.0",
     "postcss": "^8.4.21",
     "react": "^18.2.0",
@@ -40,11 +45,12 @@
     "@types/react-copy-to-clipboard": "^5.0.7",
     "@types/react-dom": "^19",
     "daisyui": "^5.0.4",
+    "drizzle-kit": "^0.31.1",
+    "esbuild-register": "^3.6.0",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  }
 }

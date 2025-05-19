@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {LpDailySnapshotRequestBody, LpDailySnapshotItem} from '@/types/hyperIndex';
+import { LpDailySnapshotRequestBody, LpDailySnapshotItem } from '@/types/hyperIndex';
 
 export type LpDailySnapshotResponse = LpDailySnapshotItem[];
 

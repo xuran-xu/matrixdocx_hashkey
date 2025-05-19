@@ -82,7 +82,7 @@ export function useXaumHoldingDays() {
           args: {
             to: address as ViemAddress,
           },
-          fromBlock: 0n, // Consider optimizing this in production
+          fromBlock: BigInt(0), // Consider optimizing this in production
           toBlock: 'latest',
         });
 
@@ -103,6 +103,7 @@ export function useXaumHoldingDays() {
             const firstTransferTimestamp = Number(block.timestamp) * 1000;
             const now = Date.now();
             const diffMilliseconds = now - firstTransferTimestamp;
+            // debugger;
             const diffDays = Math.floor(diffMilliseconds / (1000 * 60 * 60 * 24));
             setHoldingDays(diffDays >= 0 ? diffDays : 0);
             setHookError(null);
